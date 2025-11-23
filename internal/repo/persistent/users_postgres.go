@@ -26,6 +26,20 @@ func (u *UsersRepo) GetUserByLogin(login string) (entity.User, error) {
 	return user, nil
 }
 
+func (u *UsersRepo) IsContainsLogin(login string) (bool, error) {
+	row := u.db.QueryRow("select count(*) from users where login = $1", login)
+
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
 func (u *UsersRepo) InsertUser(user entity.User) error {
 	result, err := u.db.Exec("insert into users(login, name, password_hash) "+
 		"values($1, $2, $3)", user.Login, user.Name, user.PasswordHash)

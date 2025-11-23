@@ -25,7 +25,8 @@ func NewAuthRoutes(usersUC usecase.Users, tokensUC usecase.Tokens) *AuthRoutes {
 func (auth *AuthRoutes) AuthToken(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token := c.Request().Header.Get("Authorization")
-		if token == "" || !strings.HasPrefix("token", "Bearer") {
+		if token == "" || !strings.HasPrefix(token, "Bearer") {
+			log.Println("prefix " + token)
 			return c.JSON(http.StatusUnauthorized, map[string]string{
 				"message": "bad token",
 			})
@@ -34,6 +35,7 @@ func (auth *AuthRoutes) AuthToken(next echo.HandlerFunc) echo.HandlerFunc {
 		token = strings.TrimPrefix(token, "Bearer ")
 		user_id, err := auth.TokensUC.IsValidToken(tokengenerator.Token(token))
 		if err != nil {
+			log.Println(token)
 			return c.JSON(http.StatusUnauthorized, map[string]string{
 				"message": "bad token",
 			})
@@ -59,7 +61,7 @@ func (auth *AuthRoutes) Login(c echo.Context) error {
 
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"message": "unvalid login",
+			"message": "unauthorized",
 		})
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
@@ -85,6 +87,16 @@ func (auth *AuthRoutes) Register(c echo.Context) error {
 	if login == "" || name == "" || password == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "wrong data",
+		})
+	}
+	is_contains, err := auth.UsersUC.IsContainsLogin(login)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"message": err.Error(),
+		})
+	} else if is_contains {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "the login already exists",
 		})
 	}
 

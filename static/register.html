@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Регистрация</title>
+<link rel="stylesheet" href="register_style.css" />
+</head>
+<body>
+<div class="card">
+  <h1>Регистрация</h1>
+  <div class="input-group">
+    <label for="name">Имя</label>
+    <input type="text" id="name" name="name" autocomplete="off" />
+  </div>
+  <div class="input-group">
+    <label for="login">Логин</label>
+    <input type="text" id="login" name="login" autocomplete="off" />
+  </div>
+  <div class="input-group">
+    <label for="password">Пароль</label>
+    <input type="password" id="password" name="password" autocomplete="off" />
+  </div>
+  <button class="btn" id="registerBtn">Зарегистрироваться</button>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="footer-text">
+    Есть аккаунт? <a id="loginLink" href="http://localhost:8080/static/login.html">Войти</a>
+  </div>
+</div>
+
+<script src="register_script.js"></script>
+</body>
+</html>

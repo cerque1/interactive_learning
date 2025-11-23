@@ -14,8 +14,12 @@ type UseCase struct {
 	moduleRepo   repo.ModuleRepo
 }
 
-func New(userRepo repo.UsersRepo) *UseCase {
-	return &UseCase{userRepo: userRepo, tokenStorage: persistent.NewTokenStorage()}
+func New(userRepo repo.UsersRepo, cardRepo repo.CardRepo, moduleRepo repo.ModuleRepo) *UseCase {
+	return &UseCase{userRepo: userRepo,
+		tokenStorage: persistent.NewTokenStorage(),
+		cardRepo:     cardRepo,
+		moduleRepo:   moduleRepo,
+	}
 }
 
 func (u *UseCase) AddTokenToUser(id int) tokengenerator.Token {
@@ -34,6 +38,10 @@ func (u *UseCase) GetUserByLogin(login string) (entity.User, error) {
 	return u.userRepo.GetUserByLogin(login)
 }
 
+func (u *UseCase) IsContainsLogin(login string) (bool, error) {
+	return u.userRepo.IsContainsLogin(login)
+}
+
 func (u *UseCase) InsertUser(user entity.User) (int, error) {
 	err := u.userRepo.InsertUser(user)
 	if err != nil {
@@ -44,6 +52,10 @@ func (u *UseCase) InsertUser(user entity.User) (int, error) {
 		return -1, err
 	}
 	return new_user.Id, nil
+}
+
+func (u *UseCase) GetCardById(card_id int) (entity.Card, error) {
+	return u.cardRepo.GetCardById(card_id)
 }
 
 func (u *UseCase) GetCardsByModule(module_id int) ([]entity.Card, error) {
@@ -91,15 +103,28 @@ func (u *UseCase) GetModulesWithCardsByUser(user_id int) ([]entity.Module, error
 		return []entity.Module{}, err
 	}
 
-	for _, module := range modules {
+	for i := range modules {
 		cards, err := u.cardRepo.GetCardsByModule(user_id)
 		if err != nil {
 			return []entity.Module{}, err
 		}
-		module.Cards = cards
+		modules[i].Cards = cards
 	}
 
 	return modules, nil
+}
+
+func (u *UseCase) GetModuleById(module_id int) (entity.Module, error) {
+	module, err := u.moduleRepo.GetModuleById(module_id)
+	if err != nil {
+		return entity.Module{}, err
+	}
+	cards, err := u.cardRepo.GetCardsByModule(module_id)
+	if err != nil {
+		return entity.Module{}, err
+	}
+	module.Cards = cards
+	return module, nil
 }
 
 func (u *UseCase) InsertModule(module entity.Module) (int, []int, error) {

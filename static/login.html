@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Вход</title>
+<link rel="stylesheet" href="login_style.css" />
+</head>
+<body>
+<div class="card">
+  <h1>Вход</h1>
+  <div class="input-group">
+    <label for="login">Логин</label>
+    <input type="text" id="login" name="login" autocomplete="off" />
+  </div>
+  <div class="input-group">
+    <label for="password">Пароль</label>
+    <input type="password" id="password" name="password" autocomplete="off" />
+  </div>
+  <button class="btn" id="loginBtn">Войти</button>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="footer-text">
+    Нет аккаунта? <a id="registerLink" href="http://localhost:8080/static/register.html">Регистрация</a>
+  </div>
+</div>
+
+<script src="login_script.js"></script>
+</body>
+</html>

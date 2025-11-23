@@ -38,11 +38,32 @@ func (cr *CardRoutes) GetCardsByModule(c echo.Context) error {
 	})
 }
 
+func (cr *CardRoutes) GetCardById(c echo.Context) error {
+	id_str := c.Param("id")
+	id, err := strconv.Atoi(id_str)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad id",
+		})
+	}
+
+	card, err := cr.CardUC.GetCardById(id)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"card": card,
+	})
+}
+
 func (cr *CardRoutes) InsertCard(c echo.Context) error {
 	card := entity.Card{}
-	if err := c.Bind(card); err != nil {
+	if err := c.Bind(&card); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "bad card info",
+			"message": err.Error(),
 		})
 	}
 

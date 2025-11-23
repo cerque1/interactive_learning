@@ -1,0 +1,77 @@
+body, html {
+    height: 100%;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #7a9edc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #003366;
+  }
+  .card {
+    background: #d9e4f5cc;
+    padding: 30px 40px;
+    border-radius: 12px;
+    width: 320px;
+    box-shadow: 0 8px 16px rgba(163, 197, 255, 0.5);
+    text-align: center;
+  }
+  .card h1 {
+    margin-bottom: 24px;
+    font-weight: 700;
+    color: #29487d;
+  }
+  .input-group {
+    margin-bottom: 18px;
+    text-align: left;
+  }
+  .input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #4a6aac;
+  }
+  .input-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #aac1f7;
+    font-size: 14px;
+    background-color: #f0f5ff;
+    color: #2c3e70;
+  }
+  .input-group input::placeholder {
+    color: #9bb6e0;
+  }
+  .btn {
+    margin-top: 12px;
+    width: 100%;
+    background-color: #7899e2;
+    border: none;
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 12px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .btn:hover {
+    background-color: #5871c4;
+  }
+  .footer-text {
+    margin-top: 18px;
+    font-size: 14px;
+    color: #5674b9;
+  }
+  .footer-text a {
+    color: #9bb6e0;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .error-msg {
+    margin-top: 12px;
+    color: #c75c5c;
+    font-weight: 600;
+  }
+  

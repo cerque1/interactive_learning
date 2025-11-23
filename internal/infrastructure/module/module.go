@@ -3,6 +3,7 @@ package module
 import (
 	"interactive_learning/internal/entity"
 	"interactive_learning/internal/usecase"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -29,6 +30,7 @@ func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
 
 	is_with_cards, err := strconv.ParseBool(c.QueryParam("with_cards"))
 	if err != nil {
+		log.Println(err)
 		is_with_cards = false
 	}
 
@@ -49,6 +51,27 @@ func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
 	})
 }
 
+func (mr *ModuleRoutes) GetModuleById(c echo.Context) error {
+	id_str := c.Param("id")
+	id, err := strconv.Atoi(id_str)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
+	module, err := mr.ModuleUC.GetModuleById(id)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"module": module,
+	})
+}
+
 func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
 	module := entity.Module{}
 	user_id_str := c.QueryParam("user_id")
@@ -62,7 +85,7 @@ func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
 	module.OwnerId = user_id
 	if err := c.Bind(&module); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "bad data",
+			"message": err.Error(),
 		})
 	}
 

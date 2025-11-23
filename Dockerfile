@@ -13,6 +13,7 @@ FROM alpine
 
 WORKDIR /app
 
+COPY /static /app/static
 COPY --from=builder /app/interactive_learning /app/interactive_learning
 
 CMD [ "./interactive_learning" ]

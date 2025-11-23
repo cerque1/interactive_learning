@@ -13,11 +13,13 @@ type Tokens interface {
 
 type Users interface {
 	GetUserByLogin(login string) (entity.User, error)
+	IsContainsLogin(login string) (bool, error)
 	InsertUser(user entity.User) (int, error)
 }
 
 type Cards interface {
 	GetCardsByModule(module_id int) ([]entity.Card, error)
+	GetCardById(card_id int) (entity.Card, error)
 	InsertCard(card entity.Card) (int, error)
 	InsertCards(cards []entity.Card) ([]int, error)
 	DeleteCard(card_id int) error
@@ -25,6 +27,7 @@ type Cards interface {
 
 type Modules interface {
 	GetModulesByUser(user_id int) ([]entity.Module, error)
+	GetModuleById(module_id int) (entity.Module, error)
 	GetModulesWithCardsByUser(user_id int) ([]entity.Module, error)
 	InsertModule(module entity.Module) (int, []int, error)
 	DeleteModule(module_id int) error

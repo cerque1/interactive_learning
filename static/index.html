@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+</head>
+<body>
+    <h1 id="tokenDisplay"></h1>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            // Получаем токен из localStorage (если хранится под ключом 'token')
+            const token = localStorage.getItem('token');
+
+            // Отображаем токен в h1
+            const h1 = document.getElementById('tokenDisplay');
+            h1.textContent = token ? token : 'Токен не найден';
+        });
+    </script>
+</body>
+</html>

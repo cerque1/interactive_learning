@@ -18,7 +18,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func Run(migrationsDir string, migrationsFS embed.FS) {
+func Run(migrationsDir string, migrationsFS embed.FS, path_to_static string) {
 	connectionString := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
@@ -62,8 +62,8 @@ func Run(migrationsDir string, migrationsFS embed.FS) {
 		log.Fatal("database not ready")
 	}
 
-	us := interactivelearning.New(persistent.NewUsersRepo(db))
-	e := infrastructure.NewEcho(us, us, us, us)
+	us := interactivelearning.New(persistent.NewUsersRepo(db), persistent.NewCardsRepo(db), persistent.NewModulesRepo(db))
+	e := infrastructure.NewEcho(path_to_static, us, us, us, us)
 
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger())
