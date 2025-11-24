@@ -13,6 +13,7 @@ type TokenStorage interface {
 
 type UsersRepo interface {
 	GetUserByLogin(login string) (entity.User, error)
+	GetUserInfoById(user_id int) (entity.User, error)
 	IsContainsLogin(login string) (bool, error)
 	InsertUser(user entity.User) error
 }
@@ -31,4 +32,19 @@ type ModuleRepo interface {
 	GetLastInsertedModuleId() (int, error)
 	InsertModule(module entity.Module) error
 	DeleteModule(module_id int) error
+}
+
+type CategoryRepo interface {
+	GetCategoriesToUser(user_id int) ([]entity.Category, error)
+	GetCategoryById(id int) (entity.Category, error)
+	GetLastInsertedCategoryId() (int, error)
+	InsertCategory(category entity.Category) error
+	DeleteCategory(id int) error
+}
+
+type CategoryModulesRepo interface {
+	GetModulesToCategory(category_id int) ([]entity.Module, error)
+	InsertModuleToCategory(category_id, module_id int) error
+	DeleteModuleFromCategory(category_id, module_id int) error
+	DeleteAllModulesFromCategory(category_id int) error
 }

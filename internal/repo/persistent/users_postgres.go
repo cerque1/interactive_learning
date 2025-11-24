@@ -26,6 +26,18 @@ func (u *UsersRepo) GetUserByLogin(login string) (entity.User, error) {
 	return user, nil
 }
 
+func (u *UsersRepo) GetUserInfoById(user_id int) (entity.User, error) {
+	row := u.db.QueryRow("select id, login, name from users where id = $1", user_id)
+
+	user := entity.User{}
+	err := row.Scan(&user.Id, &user.Login, &user.Name)
+	if err != nil {
+		return entity.User{}, err
+	}
+
+	return user, nil
+}
+
 func (u *UsersRepo) IsContainsLogin(login string) (bool, error) {
 	row := u.db.QueryRow("select count(*) from users where login = $1", login)
 

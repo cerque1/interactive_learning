@@ -13,6 +13,7 @@ type Tokens interface {
 
 type Users interface {
 	GetUserByLogin(login string) (entity.User, error)
+	GetUserInfoById(user_id int, is_full bool) (entity.User, error)
 	IsContainsLogin(login string) (bool, error)
 	InsertUser(user entity.User) (int, error)
 }
@@ -31,4 +32,18 @@ type Modules interface {
 	GetModulesWithCardsByUser(user_id int) ([]entity.Module, error)
 	InsertModule(module entity.Module) (int, []int, error)
 	DeleteModule(module_id int) error
+}
+
+type Categories interface {
+	GetCategoriesToUser(user_id int, is_full bool) ([]entity.Category, error)
+	GetCategoryById(id int) (entity.Category, error)
+	InsertCategory(category entity.Category) (int, error)
+	DeleteCategory(id int) error
+}
+
+type CategoryModules interface {
+	GetModulesToCategory(category_id int, is_full bool) ([]entity.Module, error)
+	InsertModuleToCategory(category_id, module_id int) error
+	DeleteModuleFromCategory(category_id, module_id int) error
+	DeleteAllModulesFromCategory(category_id int) error
 }

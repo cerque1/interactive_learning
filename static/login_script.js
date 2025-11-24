@@ -27,7 +27,7 @@ loginBtn.addEventListener('click', () => {
         if (data.token) {
           sessionStorage.setItem('token', data.token);
           localStorage.setItem('token', data.token);
-          window.location.href = 'http://localhost:8080/static/index.html';
+          window.location.href = 'http://localhost:8080/static/main.html';
         } else {
           errorMsg.textContent = 'Ошибка: отсутствует токен в ответе.';
         }
