@@ -1,0 +1,94 @@
+body, html {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #ffffff; /* белый фон */
+    color: #2f4f9c; /* насыщенный синий для основного текста */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  header {
+    background-color: #007bfb; /* насыщенный синий для хедера */
+    padding: 15px 20px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    align-items: center;
+  }
+  
+  #username {
+    position: absolute;
+    left: 20px;
+    font-weight: 600;
+    color: #C1C8E4; /* светлый синий */
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s ease;
+  }
+  
+  #username:hover {
+    color: #8860D0; /* фиолетовый оттенок */
+    text-decoration: underline;
+  }
+  
+  header h1 {
+    margin: 0;
+    font-weight: 700;
+    color: white;
+  }
+  
+  main {
+    padding: 20px;
+    flex-grow: 1;
+  }
+  
+  section {
+    margin-bottom: 32px;
+  }
+  
+  section h2 {
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #007bfb; /* насыщенный синий */
+  }
+  
+  .cards-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .card {
+    background-color: #bfdeff; /* светлый голубой */
+    border-radius: 12px;
+    padding: 20px;
+    width: 190px;
+    min-height: 80px;
+    box-shadow: 0 4px 8px rgba(86, 122, 190, 0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #154273; /* темно-синий для текста на карточках */
+    cursor: default;
+  }
+  
+  .card-title {
+    font-weight: 700;
+    font-size: 1.1em;
+    margin-bottom: 8px;
+  }
+  
+  .card-count {
+    font-size: 0.95em;
+    color: #5AB9EA;
+  }
+  
+  .empty-message {
+    text-align: center;
+    color: #5AB9EA;
+    font-style: italic;
+    font-size: 1.1em;
+    user-select: none;
+  }
+  

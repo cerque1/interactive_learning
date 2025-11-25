@@ -36,7 +36,7 @@ func (cr *CategoryRoutes) GetCategoryById(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"categories": categories,
+		"category": categories,
 	})
 }
 

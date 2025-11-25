@@ -39,6 +39,10 @@ window.addEventListener('DOMContentLoaded', () => {
           const card = document.createElement('div');
           card.className = 'card';
           card.innerHTML = `<div class="card-title">${module.name}</div><div class="card-count">Карточек: ${cardCount}</div>`;
+          card.style.cursor = 'pointer';
+          card.onclick = () => {
+            window.location.href = `/static/module.html?module_id=${encodeURIComponent(module.id)}`;
+          };
           modulesContainer.appendChild(card);
         });
       }
@@ -56,6 +60,10 @@ window.addEventListener('DOMContentLoaded', () => {
           const card = document.createElement('div');
           card.className = 'card';
           card.innerHTML = `<div class="card-title">${category.name}</div><div class="card-count">Модулей: ${modulesCount}</div>`;
+          card.style.cursor = 'pointer';
+          card.onclick = () => {
+            window.location.href = `/static/category.html?category_id=${encodeURIComponent(category.id)}`;
+          };
           categoriesContainer.appendChild(card);
         });
       }
