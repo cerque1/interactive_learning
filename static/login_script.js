@@ -1,11 +1,3 @@
-const loginBtn = document.getElementById('loginBtn');
-const errorMsg = document.getElementById('errorMsg');
-const registerLink = document.getElementById('registerLink');
-
-registerLink.addEventListener('click', () => {
-  window.location.href = '/register';
-});
-
 loginBtn.addEventListener('click', () => {
   errorMsg.textContent = '';
   const login = document.getElementById('login').value.trim();
@@ -16,7 +8,7 @@ loginBtn.addEventListener('click', () => {
     return;
   }
 
-  const url = new URL('http://localhost:8080/api/auth/login');
+  const url = new URL('/api/auth/login');
   url.searchParams.append('login', login);
   url.searchParams.append('password', password);
 
@@ -27,7 +19,17 @@ loginBtn.addEventListener('click', () => {
         if (data.token) {
           sessionStorage.setItem('token', data.token);
           localStorage.setItem('token', data.token);
-          window.location.href = 'http://localhost:8080/static/main.html';
+
+          // Получаем параметр redirect из URL страницы входа
+          const params = new URLSearchParams(window.location.search);
+          const redirectUrl = params.get('redirect');
+
+          // Переходим на redirectUrl, либо на главную если параметр отсутствует
+          if (redirectUrl) {
+            window.location.href = redirectUrl;
+          } else {
+            window.location.href = '/static/main.html';
+          }
         } else {
           errorMsg.textContent = 'Ошибка: отсутствует токен в ответе.';
         }
@@ -42,4 +44,20 @@ loginBtn.addEventListener('click', () => {
     .catch(() => {
       errorMsg.textContent = 'Ошибка соединения. Попробуйте позже.';
     });
+});
+
+const registerLink = document.getElementById('registerLink');
+
+registerLink.addEventListener('click', (e) => {
+  e.preventDefault(); // отменяем переход по ссылке
+
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get('redirect');
+
+  let targetUrl = '/static/register.html';
+  if (redirect) {
+    targetUrl += `?redirect=${encodeURIComponent(redirect)}`;
+  }
+
+  window.location.href = targetUrl;
 });

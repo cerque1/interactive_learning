@@ -5,7 +5,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    fetch('http://localhost:8080/api/v1/user/me?is_full=t', {
+    fetch('/api/v1/user/me?is_full=t', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -73,5 +73,12 @@ window.addEventListener('DOMContentLoaded', () => {
     .catch(() => {
       document.body.innerHTML = '<p style="text-align:center; margin-top:50px; font-size:18px; color:#c75c5c;">Ошибка загрузки данных. Попробуйте перезагрузить страницу.</p>';
     });
+
+    const navToggle = document.getElementById('nav-toggle');
+    const navPanel = document.getElementById('nav-panel');
+    
+    navToggle.addEventListener('click', function() {
+      navPanel.classList.toggle('open');
+      navToggle.classList.toggle('open');
+    });
   });
-  

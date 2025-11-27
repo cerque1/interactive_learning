@@ -55,3 +55,19 @@ registerBtn.addEventListener('click', () => {
       errorMsg.textContent = 'Ошибка соединения. Попробуйте позже.';
     });
 });
+
+const registerLink = document.getElementById('loginLink');
+
+registerLink.addEventListener('click', (e) => {
+  e.preventDefault(); // отменяем переход по ссылке
+
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get('redirect');
+
+  let targetUrl = '/static/login.html';
+  if (redirect) {
+    targetUrl += `?redirect=${encodeURIComponent(redirect)}`;
+  }
+
+  window.location.href = targetUrl;
+});

@@ -1,7 +1,7 @@
 window.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/static/login.html';
+      window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
       return;
     }
   
@@ -13,12 +13,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   
     // Получить имя пользователя
-    fetch('http://localhost:8080/api/v1/user/me?is_full=f', {
+    fetch('/api/v1/user/me?is_full=f', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => {
       if (res.status === 401) {
-        window.location.href = '/static/login.html';
+        window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
         return;
       }
       return res.json();
@@ -35,12 +35,12 @@ window.addEventListener('DOMContentLoaded', () => {
     .catch(() => {});
   
     // Получить данные категории
-    fetch(`http://localhost:8080/api/v1/category/${categoryId}?is_full=t`, {
+    fetch(`/api/v1/category/${categoryId}?is_full=t`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => {
       if (res.status === 401) {
-        window.location.href = '/static/login.html';
+        window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
         return;
       }
       if (!res.ok) {
@@ -84,5 +84,16 @@ window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('category-name').textContent = 'Ошибка загрузки категории';
       document.getElementById('modules-container').innerHTML = '';
     });
+
+    const navToggle = document.getElementById('nav-toggle');
+    const navPanel = document.getElementById('nav-panel');
+    
+    navToggle.addEventListener('click', function() {
+      navPanel.classList.toggle('open');
+      navToggle.classList.toggle('open');
+    });
   });
   
+  document.getElementById('head').addEventListener('click', () => {
+    window.location.href = '/static/main.html'
+  });

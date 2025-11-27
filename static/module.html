@@ -4,15 +4,25 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Просмотр модуля</title>
-<link rel="stylesheet" href="module_style.css" />
+<link rel="stylesheet" href="module_style.css"/>
 </head>
 <body>
 <header>
+  <button id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+  <h1 id="head">
+    Заучка
+  </h1>
   <div id="username"></div>
-  <h1>Заучка</h1>
 </header>
 
 <main>
+  <nav id="nav-panel">
+    <h2>Панель навигации</h2>
+    <button id="modules-btn">Модули</button>
+    <button id="categories-btn">Категории</button>
+    <button id="results-btn">Результаты</button>
+  </nav>  
+
   <section>
     <h2 id="module-name">Загрузка...</h2>
     <div id="cards-container" class="cards-container"></div>
