@@ -18,8 +18,8 @@ func NewCardRoutes(cardUc usecase.Cards) *CardRoutes {
 }
 
 func (cr *CardRoutes) GetCardsByModule(c echo.Context) error {
-	id_str := c.Param("id")
-	id, err := strconv.Atoi(id_str)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad id",
@@ -39,8 +39,8 @@ func (cr *CardRoutes) GetCardsByModule(c echo.Context) error {
 }
 
 func (cr *CardRoutes) GetCardById(c echo.Context) error {
-	id_str := c.Param("id")
-	id, err := strconv.Atoi(id_str)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad id",

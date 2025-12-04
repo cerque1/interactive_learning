@@ -20,8 +20,8 @@ func NewCategoryRoutes(CategoriesUC usecase.Categories, CategoryModulesUC usecas
 }
 
 func (cr *CategoryRoutes) GetCategoryById(c echo.Context) error {
-	id_str := c.Param("id")
-	id, err := strconv.Atoi(id_str)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad id",
@@ -41,20 +41,20 @@ func (cr *CategoryRoutes) GetCategoryById(c echo.Context) error {
 }
 
 func (cr *CategoryRoutes) GetCategoriesToUser(c echo.Context) error {
-	id_str := c.Param("id")
-	id, err := strconv.Atoi(id_str)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad id",
 		})
 	}
 
-	is_full, err := strconv.ParseBool(c.QueryParam("is_full"))
+	isFull, err := strconv.ParseBool(c.QueryParam("is_full"))
 	if err != nil {
-		is_full = false
+		isFull = false
 	}
 
-	categories, err := cr.CategoriesUC.GetCategoriesToUser(id, is_full)
+	categories, err := cr.CategoriesUC.GetCategoriesToUser(id, isFull)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
@@ -67,20 +67,20 @@ func (cr *CategoryRoutes) GetCategoriesToUser(c echo.Context) error {
 }
 
 func (cr *CategoryRoutes) GetModulesToCategory(c echo.Context) error {
-	id_str := c.Param("id")
-	id, err := strconv.Atoi(id_str)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad id",
 		})
 	}
 
-	is_full, err := strconv.ParseBool(c.QueryParam("is_full"))
+	isFull, err := strconv.ParseBool(c.QueryParam("is_full"))
 	if err != nil {
-		is_full = false
+		isFull = false
 	}
 
-	modules, err := cr.CategoryModulesUC.GetModulesToCategory(id, is_full)
+	modules, err := cr.CategoryModulesUC.GetModulesToCategory(id, isFull)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
@@ -94,15 +94,15 @@ func (cr *CategoryRoutes) GetModulesToCategory(c echo.Context) error {
 
 func (cr *CategoryRoutes) InsertCategory(c echo.Context) error {
 	category := entity.Category{}
-	user_id_str := c.QueryParam("user_id")
-	user_id, err := strconv.Atoi(user_id_str)
+	userIdStr := c.QueryParam("user_id")
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad user id",
 		})
 	}
 
-	category.OwnerId = user_id
+	category.OwnerId = userId
 	if err := c.Bind(&category); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
@@ -121,46 +121,46 @@ func (cr *CategoryRoutes) InsertCategory(c echo.Context) error {
 }
 
 func (cr *CategoryRoutes) InsertModuleToCategory(c echo.Context) error {
-	user_id, err := strconv.Atoi(c.QueryParam("user_id"))
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad user id",
 		})
 	}
 
-	category_id, err := strconv.Atoi(c.Param("category_id"))
+	categoryId, err := strconv.Atoi(c.Param("category_id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad category id",
 		})
 	}
 
-	module_id, err := strconv.Atoi(c.QueryParam("module_id"))
+	moduleId, err := strconv.Atoi(c.QueryParam("module_id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad module id",
 		})
 	}
 
-	category, err := cr.CategoriesUC.GetCategoryById(category_id)
+	category, err := cr.CategoriesUC.GetCategoryById(categoryId)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})
 	}
 
-	if category.OwnerId != user_id {
+	if category.OwnerId != userId {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "you are not the owner",
 		})
 	}
-	if idx := slices.IndexFunc(category.Modules, func(elt entity.Module) bool { return elt.Id == module_id }); idx >= 0 {
+	if idx := slices.IndexFunc(category.Modules, func(elt entity.Module) bool { return elt.Id == moduleId }); idx >= 0 {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "module is already exists",
 		})
 	}
 
-	if err = cr.CategoryModulesUC.InsertModuleToCategory(category_id, module_id); err != nil {
+	if err = cr.CategoryModulesUC.InsertModuleToCategory(categoryId, moduleId); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})

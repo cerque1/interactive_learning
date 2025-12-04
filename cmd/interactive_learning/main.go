@@ -5,13 +5,13 @@ import (
 	"interactive_learning/internal/interactive_learning"
 )
 
-const migrationsDir = "migrations"
+const MigrationsDir = "migrations"
 
 //go:embed migrations/*.sql
 var MigrationsFS embed.FS
 
-const path_to_static = "./static"
+const pathToStatic = "./static"
 
 func main() {
-	interactive_learning.Run(migrationsDir, MigrationsFS, path_to_static)
+	interactive_learning.Run(MigrationsDir, MigrationsFS, pathToStatic)
 }
