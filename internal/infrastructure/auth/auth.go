@@ -33,7 +33,7 @@ func (auth *AuthRoutes) AuthToken(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		token = strings.TrimPrefix(token, "Bearer ")
-		user_id, err := auth.TokensUC.IsValidToken(tokengenerator.Token(token))
+		userId, err := auth.TokensUC.IsValidToken(tokengenerator.Token(token))
 		if err != nil {
 			log.Println(token)
 			return c.JSON(http.StatusUnauthorized, map[string]string{
@@ -41,7 +41,7 @@ func (auth *AuthRoutes) AuthToken(next echo.HandlerFunc) echo.HandlerFunc {
 			})
 		}
 
-		c.QueryParams().Add("user_id", strconv.Itoa(user_id))
+		c.QueryParams().Add("user_id", strconv.Itoa(userId))
 
 		return next(c)
 	}
@@ -89,12 +89,12 @@ func (auth *AuthRoutes) Register(c echo.Context) error {
 			"message": "wrong data",
 		})
 	}
-	is_contains, err := auth.UsersUC.IsContainsLogin(login)
+	isContains, err := auth.UsersUC.IsContainsLogin(login)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"message": err.Error(),
 		})
-	} else if is_contains {
+	} else if isContains {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "the login already exists",
 		})

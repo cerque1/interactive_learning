@@ -13,29 +13,29 @@ type TokenStorage interface {
 
 type UsersRepo interface {
 	GetUserByLogin(login string) (entity.User, error)
-	GetUserInfoById(user_id int) (entity.User, error)
+	GetUserInfoById(userId int) (entity.User, error)
 	IsContainsLogin(login string) (bool, error)
 	InsertUser(user entity.User) error
 }
 
 type CardRepo interface {
-	GetCardsByModule(module_id int) ([]entity.Card, error)
-	GetCardById(card_id int) (entity.Card, error)
+	GetCardsByModule(moduleId int) ([]entity.Card, error)
+	GetCardById(cardId int) (entity.Card, error)
 	GetLastInsertedCardId() (int, error)
 	InsertCard(card entity.Card) error
-	DeleteCard(card_id int) error
+	DeleteCard(cardId int) error
 }
 
 type ModuleRepo interface {
-	GetModulesByUser(user_id int) ([]entity.Module, error)
-	GetModuleById(module_id int) (entity.Module, error)
+	GetModulesByUser(userId int) ([]entity.Module, error)
+	GetModuleById(moduleId int) (entity.Module, error)
 	GetLastInsertedModuleId() (int, error)
 	InsertModule(module entity.Module) error
-	DeleteModule(module_id int) error
+	DeleteModule(moduleId int) error
 }
 
 type CategoryRepo interface {
-	GetCategoriesToUser(user_id int) ([]entity.Category, error)
+	GetCategoriesToUser(userId int) ([]entity.Category, error)
 	GetCategoryById(id int) (entity.Category, error)
 	GetLastInsertedCategoryId() (int, error)
 	InsertCategory(category entity.Category) error
@@ -43,8 +43,8 @@ type CategoryRepo interface {
 }
 
 type CategoryModulesRepo interface {
-	GetModulesToCategory(category_id int) ([]entity.Module, error)
-	InsertModuleToCategory(category_id, module_id int) error
-	DeleteModuleFromCategory(category_id, module_id int) error
-	DeleteAllModulesFromCategory(category_id int) error
+	GetModulesToCategory(categoryId int) ([]entity.Module, error)
+	InsertModuleToCategory(categoryId, moduleId int) error
+	DeleteModuleFromCategory(categoryId, moduleId int) error
+	DeleteAllModulesFromCategory(categoryId int) error
 }

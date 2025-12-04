@@ -9,9 +9,9 @@ import (
 )
 
 type TokenStorage struct {
-	user_id_to_token map[int]pair.Pair[tokengenerator.Token, time.Time]
-	token_to_user_id map[tokengenerator.Token]int
-	m                sync.Mutex
+	userIdToToken map[int]pair.Pair[tokengenerator.Token, time.Time]
+	tokenToUserId map[tokengenerator.Token]int
+	m             sync.Mutex
 }
 
 func NewTokenStorage() *TokenStorage {
@@ -27,18 +27,18 @@ func (t *TokenStorage) AddTokenToUser(id int) tokengenerator.Token {
 	defer t.m.Unlock()
 
 	token := tokengenerator.GenerateToken()
-	_, ok := t.token_to_user_id[token]
+	_, ok := t.tokenToUserId[token]
 	for ok {
 		token = tokengenerator.GenerateToken()
-		_, ok = t.token_to_user_id[token]
+		_, ok = t.tokenToUserId[token]
 	}
 
-	t.user_id_to_token[id] =
+	t.userIdToToken[id] =
 		pair.Pair[tokengenerator.Token, time.Time]{
 			First:  token,
 			Second: time.Now(),
 		}
-	t.token_to_user_id[token] = id
+	t.tokenToUserId[token] = id
 
 	return token
 }
@@ -47,14 +47,14 @@ func (t *TokenStorage) DeleteTokenToUser(id int) error {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	token, ok := t.user_id_to_token[id]
+	token, ok := t.userIdToToken[id]
 
 	if !ok {
 		return errors.New("no such user to delete token")
 	}
 
-	delete(t.user_id_to_token, id)
-	delete(t.token_to_user_id, token.First)
+	delete(t.userIdToToken, id)
+	delete(t.tokenToUserId, token.First)
 
 	return nil
 }
@@ -63,12 +63,12 @@ func (t *TokenStorage) IsValidToken(token tokengenerator.Token) (int, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	user_id, ok := t.token_to_user_id[token]
+	userId, ok := t.tokenToUserId[token]
 	if !ok {
 		return -1, errors.New("invalid token")
-	} else if time.Until(t.user_id_to_token[user_id].Second).Hours() < -1 {
+	} else if time.Until(t.userIdToToken[userId].Second).Hours() < -1 {
 		return -1, errors.New("token is expired")
 	}
 
-	return user_id, nil
+	return userId, nil
 }

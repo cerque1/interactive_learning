@@ -14,8 +14,8 @@ func NewModulesRepo(db *sql.DB) *ModulesRepo {
 	return &ModulesRepo{db: db}
 }
 
-func (mr *ModulesRepo) GetModulesByUser(user_id int) ([]entity.Module, error) {
-	rows, err := mr.db.Query("SELECT * FROM modules WHERE owner_id = $1", user_id)
+func (mr *ModulesRepo) GetModulesByUser(userId int) ([]entity.Module, error) {
+	rows, err := mr.db.Query("SELECT * FROM modules WHERE owner_id = $1", userId)
 	if err != nil {
 		return []entity.Module{}, err
 	}
@@ -32,8 +32,8 @@ func (mr *ModulesRepo) GetModulesByUser(user_id int) ([]entity.Module, error) {
 	return modules, nil
 }
 
-func (cr *ModulesRepo) GetModuleById(module_id int) (entity.Module, error) {
-	row := cr.db.QueryRow("SELECT * FROM modules WHERE id = $1", module_id)
+func (cr *ModulesRepo) GetModuleById(moduleId int) (entity.Module, error) {
+	row := cr.db.QueryRow("SELECT * FROM modules WHERE id = $1", moduleId)
 	m := entity.Module{}
 	err := row.Scan(&m.Id, &m.Name, &m.OwnerId, &m.Type)
 	if err != nil {
@@ -64,8 +64,8 @@ func (mr *ModulesRepo) InsertModule(module entity.Module) error {
 	return nil
 }
 
-func (mr *ModulesRepo) DeleteModule(module_id int) error {
-	result, err := mr.db.Exec("DELETE FROM modules WHERE id = $1", module_id)
+func (mr *ModulesRepo) DeleteModule(moduleId int) error {
+	result, err := mr.db.Exec("DELETE FROM modules WHERE id = $1", moduleId)
 	if err != nil {
 		return err
 	}

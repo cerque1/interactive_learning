@@ -14,8 +14,8 @@ func NewCardsRepo(db *sql.DB) *CardsRepo {
 	return &CardsRepo{db: db}
 }
 
-func (cr *CardsRepo) GetCardsByModule(module_id int) ([]entity.Card, error) {
-	rows, err := cr.db.Query("SELECT * FROM cards WHERE module_id = $1", module_id)
+func (cr *CardsRepo) GetCardsByModule(moduleId int) ([]entity.Card, error) {
+	rows, err := cr.db.Query("SELECT * FROM cards WHERE module_id = $1", moduleId)
 	if err != nil {
 		return []entity.Card{}, err
 	}
@@ -39,8 +39,8 @@ func (cr *CardsRepo) GetCardsByModule(module_id int) ([]entity.Card, error) {
 	return cards, nil
 }
 
-func (cr *CardsRepo) GetCardById(card_id int) (entity.Card, error) {
-	row := cr.db.QueryRow("SELECT * FROM cards WHERE id = $1", card_id)
+func (cr *CardsRepo) GetCardById(cardId int) (entity.Card, error) {
+	row := cr.db.QueryRow("SELECT * FROM cards WHERE id = $1", cardId)
 	c := entity.Card{}
 	err := row.Scan(&c.Id,
 		&c.ParentModule,
@@ -76,8 +76,8 @@ func (cr *CardsRepo) InsertCard(card entity.Card) error {
 	return nil
 }
 
-func (cr *CardsRepo) DeleteCard(card_id int) error {
-	result, err := cr.db.Exec("DELETE FROM cards WHERE id = $1", card_id)
+func (cr *CardsRepo) DeleteCard(cardId int) error {
+	result, err := cr.db.Exec("DELETE FROM cards WHERE id = $1", cardId)
 	if err != nil {
 		return err
 	}

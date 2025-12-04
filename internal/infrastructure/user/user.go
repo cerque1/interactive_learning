@@ -17,11 +17,11 @@ func NewUserRoues(UsersUC usecase.Users) *UserRoutes {
 }
 
 func (ur *UserRoutes) GetUserInfoById(c echo.Context) error {
-	id_str := c.Param("id")
+	idStr := c.Param("id")
 	var id int
 	var err error
 
-	if id_str == "" {
+	if idStr == "" {
 		id, err = strconv.Atoi(c.QueryParam("user_id"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
@@ -29,7 +29,7 @@ func (ur *UserRoutes) GetUserInfoById(c echo.Context) error {
 			})
 		}
 	} else {
-		id, err = strconv.Atoi(id_str)
+		id, err = strconv.Atoi(idStr)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
 				"message": "bad id",
@@ -37,12 +37,12 @@ func (ur *UserRoutes) GetUserInfoById(c echo.Context) error {
 		}
 	}
 
-	is_full, err := strconv.ParseBool(c.QueryParam("is_full"))
+	isFull, err := strconv.ParseBool(c.QueryParam("is_full"))
 	if err != nil {
-		is_full = false
+		isFull = false
 	}
 
-	user, err := ur.UsersUC.GetUserInfoById(id, is_full)
+	user, err := ur.UsersUC.GetUserInfoById(id, isFull)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),

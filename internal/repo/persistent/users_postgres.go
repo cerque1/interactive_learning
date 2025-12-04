@@ -26,8 +26,8 @@ func (u *UsersRepo) GetUserByLogin(login string) (entity.User, error) {
 	return user, nil
 }
 
-func (u *UsersRepo) GetUserInfoById(user_id int) (entity.User, error) {
-	row := u.db.QueryRow("select id, login, name from users where id = $1", user_id)
+func (u *UsersRepo) GetUserInfoById(userId int) (entity.User, error) {
+	row := u.db.QueryRow("select id, login, name from users where id = $1", userId)
 
 	user := entity.User{}
 	err := row.Scan(&user.Id, &user.Login, &user.Name)

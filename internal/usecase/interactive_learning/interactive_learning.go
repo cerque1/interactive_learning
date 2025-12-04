@@ -49,23 +49,23 @@ func (u *UseCase) GetUserByLogin(login string) (entity.User, error) {
 	return u.userRepo.GetUserByLogin(login)
 }
 
-func (u *UseCase) GetUserInfoById(user_id int, is_full bool) (entity.User, error) {
-	user, err := u.userRepo.GetUserInfoById(user_id)
+func (u *UseCase) GetUserInfoById(userId int, isFull bool) (entity.User, error) {
+	user, err := u.userRepo.GetUserInfoById(userId)
 	if err != nil {
 		return entity.User{}, err
 	}
 
-	if !is_full {
+	if !isFull {
 		return user, nil
 	}
 
-	modules, err := u.GetModulesWithCardsByUser(user_id)
+	modules, err := u.GetModulesWithCardsByUser(userId)
 	if err != nil {
 		return entity.User{}, err
 	}
 	user.Modules = modules
 
-	categories, err := u.GetCategoriesToUser(user_id, true)
+	categories, err := u.GetCategoriesToUser(userId, true)
 	if err != nil {
 		return entity.User{}, err
 	}
@@ -89,19 +89,19 @@ func (u *UseCase) InsertUser(user entity.User) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	new_user, err := u.userRepo.GetUserByLogin(user.Login)
+	newUser, err := u.userRepo.GetUserByLogin(user.Login)
 	if err != nil {
 		return -1, err
 	}
-	return new_user.Id, nil
+	return newUser.Id, nil
 }
 
-func (u *UseCase) GetCardById(card_id int) (entity.Card, error) {
-	return u.cardRepo.GetCardById(card_id)
+func (u *UseCase) GetCardById(cardId int) (entity.Card, error) {
+	return u.cardRepo.GetCardById(cardId)
 }
 
-func (u *UseCase) GetCardsByModule(module_id int) ([]entity.Card, error) {
-	return u.cardRepo.GetCardsByModule(module_id)
+func (u *UseCase) GetCardsByModule(moduleId int) ([]entity.Card, error) {
+	return u.cardRepo.GetCardsByModule(moduleId)
 }
 
 func (u *UseCase) InsertCard(card entity.Card) (int, error) {
@@ -118,41 +118,41 @@ func (u *UseCase) InsertCard(card entity.Card) (int, error) {
 func (u *UseCase) InsertCards(cards []entity.Card) ([]int, error) {
 	var ids []int
 	var err error
-	var cur_id int
+	var curId int
 
 	for _, card := range cards {
 		err = u.cardRepo.InsertCard(card)
 		if err != nil {
 			return []int{}, err
 		}
-		cur_id, err = u.cardRepo.GetLastInsertedCardId()
+		curId, err = u.cardRepo.GetLastInsertedCardId()
 		if err != nil {
 			return []int{}, err
 		}
-		ids = append(ids, cur_id)
+		ids = append(ids, curId)
 	}
 	return ids, nil
 }
 
-func (u *UseCase) DeleteCard(card_id int) error {
+func (u *UseCase) DeleteCard(cardId int) error {
 	u.cardMutex.Lock()
 	defer u.cardMutex.Unlock()
 
-	return u.cardRepo.DeleteCard(card_id)
+	return u.cardRepo.DeleteCard(cardId)
 }
 
-func (u *UseCase) GetModulesByUser(user_id int) ([]entity.Module, error) {
-	return u.moduleRepo.GetModulesByUser(user_id)
+func (u *UseCase) GetModulesByUser(userId int) ([]entity.Module, error) {
+	return u.moduleRepo.GetModulesByUser(userId)
 }
 
-func (u *UseCase) GetModulesWithCardsByUser(user_id int) ([]entity.Module, error) {
-	modules, err := u.moduleRepo.GetModulesByUser(user_id)
+func (u *UseCase) GetModulesWithCardsByUser(userId int) ([]entity.Module, error) {
+	modules, err := u.moduleRepo.GetModulesByUser(userId)
 	if err != nil {
 		return []entity.Module{}, err
 	}
 
 	for i := range modules {
-		cards, err := u.cardRepo.GetCardsByModule(user_id)
+		cards, err := u.cardRepo.GetCardsByModule(userId)
 		if err != nil {
 			return []entity.Module{}, err
 		}
@@ -162,12 +162,12 @@ func (u *UseCase) GetModulesWithCardsByUser(user_id int) ([]entity.Module, error
 	return modules, nil
 }
 
-func (u *UseCase) GetModuleById(module_id int) (entity.Module, error) {
-	module, err := u.moduleRepo.GetModuleById(module_id)
+func (u *UseCase) GetModuleById(moduleId int) (entity.Module, error) {
+	module, err := u.moduleRepo.GetModuleById(moduleId)
 	if err != nil {
 		return entity.Module{}, err
 	}
-	cards, err := u.cardRepo.GetCardsByModule(module_id)
+	cards, err := u.cardRepo.GetCardsByModule(moduleId)
 	if err != nil {
 		return entity.Module{}, err
 	}
@@ -183,7 +183,7 @@ func (u *UseCase) InsertModule(module entity.Module) (int, []int, error) {
 	if err != nil {
 		return -1, []int{}, err
 	}
-	insert_ids, err := u.InsertCards(module.Cards)
+	insertIds, err := u.InsertCards(module.Cards)
 	if err != nil {
 		return -1, []int{}, err
 	}
@@ -191,23 +191,23 @@ func (u *UseCase) InsertModule(module entity.Module) (int, []int, error) {
 	if err != nil {
 		return -1, []int{}, err
 	}
-	return id, insert_ids, nil
+	return id, insertIds, nil
 }
 
-func (u *UseCase) DeleteModule(module_id int) error {
+func (u *UseCase) DeleteModule(moduleId int) error {
 	u.moduleMutex.Lock()
 	defer u.moduleMutex.Unlock()
 
-	return u.moduleRepo.DeleteModule(module_id)
+	return u.moduleRepo.DeleteModule(moduleId)
 }
 
-func (u *UseCase) GetCategoriesToUser(user_id int, is_full bool) ([]entity.Category, error) {
-	categories, err := u.categoryRepo.GetCategoriesToUser(user_id)
+func (u *UseCase) GetCategoriesToUser(userId int, isFull bool) ([]entity.Category, error) {
+	categories, err := u.categoryRepo.GetCategoriesToUser(userId)
 	if err != nil {
 		return []entity.Category{}, err
 	}
 
-	if !is_full {
+	if !isFull {
 		return categories, nil
 	}
 
@@ -252,13 +252,13 @@ func (u *UseCase) DeleteCategory(id int) error {
 	return u.categoryRepo.DeleteCategory(id)
 }
 
-func (u *UseCase) GetModulesToCategory(category_id int, is_full bool) ([]entity.Module, error) {
-	modules, err := u.categoryModulesRepo.GetModulesToCategory(category_id)
+func (u *UseCase) GetModulesToCategory(categoryId int, isFull bool) ([]entity.Module, error) {
+	modules, err := u.categoryModulesRepo.GetModulesToCategory(categoryId)
 	if err != nil {
 		return []entity.Module{}, err
 	}
 
-	if !is_full {
+	if !isFull {
 		return modules, nil
 	}
 
@@ -274,23 +274,23 @@ func (u *UseCase) GetModulesToCategory(category_id int, is_full bool) ([]entity.
 	return modules, nil
 }
 
-func (u *UseCase) InsertModuleToCategory(category_id, module_id int) error {
+func (u *UseCase) InsertModuleToCategory(categoryId, moduleId int) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
 
-	return u.categoryModulesRepo.InsertModuleToCategory(category_id, module_id)
+	return u.categoryModulesRepo.InsertModuleToCategory(categoryId, moduleId)
 }
 
-func (u *UseCase) DeleteModuleFromCategory(category_id, module_id int) error {
+func (u *UseCase) DeleteModuleFromCategory(categoryId, moduleId int) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
 
-	return u.categoryModulesRepo.DeleteModuleFromCategory(category_id, module_id)
+	return u.categoryModulesRepo.DeleteModuleFromCategory(categoryId, moduleId)
 }
 
-func (u *UseCase) DeleteAllModulesFromCategory(category_id int) error {
+func (u *UseCase) DeleteAllModulesFromCategory(categoryId int) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
 
-	return u.categoryModulesRepo.DeleteAllModulesFromCategory(category_id)
+	return u.categoryModulesRepo.DeleteAllModulesFromCategory(categoryId)
 }

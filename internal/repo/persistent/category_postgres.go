@@ -14,8 +14,8 @@ func NewCategoryRepo(db *sql.DB) *CategoryRepo {
 	return &CategoryRepo{db: db}
 }
 
-func (cr *CategoryRepo) GetCategoriesToUser(user_id int) ([]entity.Category, error) {
-	rows, err := cr.db.Query("SELECT * FROM categories WHERE owner_id = $1", user_id)
+func (cr *CategoryRepo) GetCategoriesToUser(userId int) ([]entity.Category, error) {
+	rows, err := cr.db.Query("SELECT * FROM categories WHERE owner_id = $1", userId)
 	if err != nil {
 		return []entity.Category{}, nil
 	}

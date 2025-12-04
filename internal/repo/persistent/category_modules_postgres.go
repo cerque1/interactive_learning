@@ -14,9 +14,9 @@ func NewCategoryModulesRepo(db *sql.DB) *CategoryModulesRepo {
 	return &CategoryModulesRepo{db: db}
 }
 
-func (cmr *CategoryModulesRepo) GetModulesToCategory(category_id int) ([]entity.Module, error) {
+func (cmr *CategoryModulesRepo) GetModulesToCategory(categoryId int) ([]entity.Module, error) {
 	rows, err := cmr.db.Query("SELECT id, name, owner_id, type FROM category_modules LEFT JOIN modules ON modules.id = category_modules.module_id "+
-		"WHERE category_id = $1", category_id)
+		"WHERE category_id = $1", categoryId)
 	if err != nil {
 		return []entity.Module{}, err
 	}
@@ -34,9 +34,9 @@ func (cmr *CategoryModulesRepo) GetModulesToCategory(category_id int) ([]entity.
 	return modules, nil
 }
 
-func (cmr *CategoryModulesRepo) InsertModuleToCategory(category_id, module_id int) error {
+func (cmr *CategoryModulesRepo) InsertModuleToCategory(categoryId, moduleId int) error {
 	result, err := cmr.db.Exec("INSERT INTO category_modules(category_id, module_id) "+
-		"VALUES($1, $2)", category_id, module_id)
+		"VALUES($1, $2)", categoryId, moduleId)
 	if err != nil {
 		return err
 	}
@@ -46,9 +46,9 @@ func (cmr *CategoryModulesRepo) InsertModuleToCategory(category_id, module_id in
 	return nil
 }
 
-func (cmr *CategoryModulesRepo) DeleteModuleFromCategory(category_id, module_id int) error {
+func (cmr *CategoryModulesRepo) DeleteModuleFromCategory(categoryId, moduleId int) error {
 	result, err := cmr.db.Exec("DELETE FROM category_modules "+
-		"WHERE category_id = $1 AND module_id = $2", category_id, module_id)
+		"WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
 	if err != nil {
 		return err
 	}
@@ -58,9 +58,9 @@ func (cmr *CategoryModulesRepo) DeleteModuleFromCategory(category_id, module_id 
 	return nil
 }
 
-func (cmr *CategoryModulesRepo) DeleteAllModulesFromCategory(category_id int) error {
+func (cmr *CategoryModulesRepo) DeleteAllModulesFromCategory(categoryId int) error {
 	result, err := cmr.db.Exec("DELETE FROM category_modules "+
-		"WHERE category_id = $1", category_id)
+		"WHERE category_id = $1", categoryId)
 	if err != nil {
 		return err
 	}

@@ -20,22 +20,22 @@ func NewModuleRoutes(moduleUC usecase.Modules, cardUC usecase.Cards) *ModuleRout
 }
 
 func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
-	id_str := c.Param("id")
-	id, err := strconv.Atoi(id_str)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad user id",
 		})
 	}
 
-	is_with_cards, err := strconv.ParseBool(c.QueryParam("with_cards"))
+	isWithCards, err := strconv.ParseBool(c.QueryParam("with_cards"))
 	if err != nil {
 		log.Println(err)
-		is_with_cards = false
+		isWithCards = false
 	}
 
 	var modules []entity.Module
-	if !is_with_cards {
+	if !isWithCards {
 		modules, err = mr.ModuleUC.GetModulesByUser(id)
 	} else {
 		modules, err = mr.ModuleUC.GetModulesWithCardsByUser(id)
@@ -52,8 +52,8 @@ func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
 }
 
 func (mr *ModuleRoutes) GetModuleById(c echo.Context) error {
-	id_str := c.Param("id")
-	id, err := strconv.Atoi(id_str)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad user id",
@@ -74,15 +74,15 @@ func (mr *ModuleRoutes) GetModuleById(c echo.Context) error {
 
 func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
 	module := entity.Module{}
-	user_id_str := c.QueryParam("user_id")
-	user_id, err := strconv.Atoi(user_id_str)
+	userIdStr := c.QueryParam("user_id")
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad user id",
 		})
 	}
 
-	module.OwnerId = user_id
+	module.OwnerId = userId
 	if err := c.Bind(&module); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
