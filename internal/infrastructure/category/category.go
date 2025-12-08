@@ -42,11 +42,23 @@ func (cr *CategoryRoutes) GetCategoryById(c echo.Context) error {
 
 func (cr *CategoryRoutes) GetCategoriesToUser(c echo.Context) error {
 	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "bad id",
-		})
+	var id int
+	var err error
+
+	if idStr == "" {
+		id, err = strconv.Atoi(c.QueryParam("user_id"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": "bad user id",
+			})
+		}
+	} else {
+		id, err = strconv.Atoi(idStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": "bad id",
+			})
+		}
 	}
 
 	isFull, err := strconv.ParseBool(c.QueryParam("is_full"))

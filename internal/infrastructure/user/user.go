@@ -32,7 +32,7 @@ func (ur *UserRoutes) GetUserInfoById(c echo.Context) error {
 		id, err = strconv.Atoi(idStr)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": "bad id",
+				"message": "bad user id",
 			})
 		}
 	}

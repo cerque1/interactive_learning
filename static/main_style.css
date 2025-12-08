@@ -73,6 +73,7 @@ section h2 {
   justify-content: center;
   color: #154273;
   cursor: default;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-title {
@@ -84,6 +85,11 @@ section h2 {
 .card-count {
   font-size: 0.95em;
   color: #5AB9EA;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(86, 122, 190, 0.4);
 }
 
 .empty-message {

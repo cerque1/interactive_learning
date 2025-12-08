@@ -85,14 +85,20 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('module-name').textContent = 'Ошибка загрузки модуля';
     document.getElementById('cards-container').innerHTML = '';
   });
+});
 
-  const navToggle = document.getElementById('nav-toggle');
-  const navPanel = document.getElementById('nav-panel');
-  
-  navToggle.addEventListener('click', function() {
-    navPanel.classList.toggle('open');
-    navToggle.classList.toggle('open');
-  });
+const navToggle = document.getElementById('nav-toggle');
+const navPanel = document.getElementById('nav-panel');
+
+const navMainBut = document.getElementById('main-btn');
+
+navToggle.addEventListener('click', function() {
+  navPanel.classList.toggle('open');
+  navToggle.classList.toggle('open');
+});
+
+navMainBut.addEventListener('click', function() {
+  window.location.href = '/static/main.html';
 });
 
 document.getElementById('head').addEventListener('click', () => {

@@ -21,11 +21,23 @@ func NewModuleRoutes(moduleUC usecase.Modules, cardUC usecase.Cards) *ModuleRout
 
 func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
 	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "bad user id",
-		})
+	var id int
+	var err error
+
+	if idStr == "" {
+		id, err = strconv.Atoi(c.QueryParam("user_id"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": "bad id " + idStr,
+			})
+		}
+	} else {
+		id, err = strconv.Atoi(idStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": "bad id",
+			})
+		}
 	}
 
 	isWithCards, err := strconv.ParseBool(c.QueryParam("with_cards"))

@@ -8,7 +8,7 @@ loginBtn.addEventListener('click', () => {
     return;
   }
 
-  const url = new URL('/api/auth/login');
+  const url = new URL('http://localhost:8080/api/auth/login');
   url.searchParams.append('login', login);
   url.searchParams.append('password', password);
 
