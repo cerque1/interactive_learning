@@ -11,3 +11,14 @@ type Card struct {
 	Term         TextWithLang `json:"term"`
 	Definition   TextWithLang `json:"definition"`
 }
+
+type CardToAdd struct {
+	Id         int          `json:"id"`
+	Term       TextWithLang `json:"term"`
+	Definition TextWithLang `json:"definition"`
+}
+
+type CardsToAdd struct {
+	Cards        []CardToAdd `json:"cards"`
+	ParentModule int         `json:"parent_module"`
+}

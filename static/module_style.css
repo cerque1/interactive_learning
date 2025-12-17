@@ -1,165 +1,276 @@
 body, html {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #ffffff; /* белый фон */
-    color: #2f4f9c; /* насыщенный синий для основного текста */
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  header {
-    position: relative;
-    background-color: #007bfb;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-  }
-  
-  header h1 {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    margin: 0;
-    font-weight: 700;
-    color: white;
-  }
-  
-  #username {
-    font-weight: 600;
-    color: #C1C8E4;
-    cursor: pointer;
-    user-select: none;
-    transition: color 0.3s ease;
-  }
-  
-  #username:hover {
-    color: #8860D0; /* фиолетовый оттенок */
-    text-decoration: underline;
-  }
-  
-  header h1 {
-    margin: 0;
-    font-weight: 700;
-    color: white;
-  }
-  
-  main {
-    padding: 20px;
-    flex-grow: 1;
-  }
-  
-  section {
-    margin-bottom: 32px;
-  }
-  
-  section h2 {
-    font-weight: 700;
-    margin-bottom: 16px;
-    color: #007bfb; /* насыщенный синий */
-  }
-  
-  .cards-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .card {
-    background-color: #bfdeff; /* светлый голубой */
-    border-radius: 12px;
-    padding: 20px;
-    min-height: 80px;
-    box-shadow: 0 4px 8px rgba(86, 122, 190, 0.3);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    color: #154273; /* темно-синий для текста на карточках */
-    cursor: default;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  
-  .card-title {
-    font-weight: 700;
-    font-size: 1.1em;
-    margin-bottom: 8px;
-  }
-  
-  .card-count {
-    font-size: 0.95em;
-    color: #5AB9EA;
-  }
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #ffffff;
+  color: #2f4f9c;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  .card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(86, 122, 190, 0.4);
-  }
-  
-  .empty-message {
-    text-align: center;
-    color: #5AB9EA;
-    font-style: italic;
-    font-size: 1.1em;
-    user-select: none;
-  }
-  
-  #nav-toggle {
-    position: fixed;
-    top: auto;
-    left: 20px;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    user-select: none;
-    z-index: 1001;
-    transition: left 0.3s ease;
-  }
-  
-  #nav-toggle.open {
-    left: calc(20% + 20px);
-  }
-  
-  #nav-panel {
-    position: fixed;
-    top: 0;
-    left: -20%;
-    width: 20%;
-    height: 100%;
-    background-color: #007bfb;
-    padding: 10px 20px;
-    box-sizing: border-box;
-    transition: left 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    z-index: 1000;
-  }
-  
-  #nav-panel.open {
-    left: 0;
-  }
-  
-  #nav-panel h2 {
-    margin: 0;
-    color: white;
-    padding: 12px;
-    font-weight: 700;
-  }
-  
-  #nav-panel button {
-    background-color: #5AB9EA;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  #nav-panel button:hover {
-    background-color: #8860D0;
-  }
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: #007bfb;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1002;
+  box-shadow: 0 2px 10px rgba(0, 123, 251, 0.3);
+}
+
+header h1 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-weight: 700;
+  color: white;
+  pointer-events: none;
+}
+
+#username {
+  font-weight: 600;
+  color: #C1C8E4;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.3s ease;
+}
+
+#username:hover {
+  color: #8860D0;
+  text-decoration: underline;
+}
+
+main {
+  padding: 70px 20px 20px;
+  flex-grow: 1;
+}
+
+section {
+  margin-bottom: 32px;
+}
+
+section h2 {
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #007bfb;
+}
+
+.cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.card {
+  background-color: #bfdeff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 220px;
+  min-height: 80px;
+  box-shadow: 0 4px 8px rgba(86, 122, 190, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: #154273;
+  cursor: default;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-title {
+  font-weight: 700;
+  font-size: 1.1em;
+  margin-bottom: 8px;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(86, 122, 190, 0.4);
+}
+
+.empty-message {
+  text-align: center;
+  color: #5AB9EA;
+  font-style: italic;
+  font-size: 1.1em;
+  user-select: none;
+}
+
+/* Навигация */
+
+#nav-toggle {
+  order: -1;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 1003;
+}
+
+#nav-panel {
+  position: fixed;
+  top: 0;
+  left: -20%;
+  width: 20%;
+  height: 100%;
+  background-color: #007bfb;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  transition: left 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 1000;
+}
+
+#nav-panel.open {
+  left: 0;
+}
+
+#nav-panel h2 {
+  margin: 0;
+  color: white;
+  padding: 12px;
+  font-weight: 700;
+}
+
+#nav-panel button {
+  background-color: #5AB9EA;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#nav-panel button:hover {
+  background-color: #8860D0;
+}
+
+/* Кнопки */
+
+.primary-btn,
+.secondary-btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary-btn {
+  background-color: #007bfb;
+  color: #fff;
+}
+
+.primary-btn:disabled,
+.secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  background-color: #bfdeff;
+  color: #154273;
+}
+
+/* Модалка */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px;
+}
+
+.modal-header,
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-body {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.close {
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.error-message {
+  background: #ffebee;
+  color: #c62828;
+  padding: 8px 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+/* Строки карточек */
+
+.card-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.card-row {
+  border: 1px solid #bfdeff;
+  border-radius: 8px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 6px 10px;
+  align-items: center;
+}
+
+.card-row label {
+  font-size: 13px;
+  color: #154273;
+}
+
+.card-row textarea {
+  width: 100%;
+  min-height: 50px;
+  resize: vertical;
+}
+
+.card-row select {
+  width: 100%;
+}
+
+.card-row .row-actions {
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

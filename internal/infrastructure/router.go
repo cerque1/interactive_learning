@@ -51,7 +51,7 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 	cards := v1.Group("/card")
 	cards.GET("/:id", cardRoutes.GetCardById)
 	cards.GET("/to_module/:id", cardRoutes.GetCardsByModule)
-	cards.POST("/create", cardRoutes.InsertCard)
+	cards.POST("/insert_to_module", cardRoutes.InsertCards)
 
 	e.GET("/debug/pprof/*", echo.WrapHandler(http.DefaultServeMux))
 

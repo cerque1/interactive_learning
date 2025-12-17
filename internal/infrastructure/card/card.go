@@ -59,15 +59,15 @@ func (cr *CardRoutes) GetCardById(c echo.Context) error {
 	})
 }
 
-func (cr *CardRoutes) InsertCard(c echo.Context) error {
-	card := entity.Card{}
-	if err := c.Bind(&card); err != nil {
+func (cr *CardRoutes) InsertCards(c echo.Context) error {
+	cards := entity.CardsToAdd{}
+	if err := c.Bind(&cards); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})
 	}
 
-	id, err := cr.CardUC.InsertCard(card)
+	id, err := cr.CardUC.InsertCards(cards)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"message": err.Error(),

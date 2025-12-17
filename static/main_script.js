@@ -80,6 +80,11 @@ modulesHeader.addEventListener('click', function() {
   window.location.href = "/static/modules.html";
 });
 
+const categoriesHeader = document.getElementById('categories-header');
+categoriesHeader.addEventListener('click', function() {
+  window.location.href = "/static/categories.html";
+});
+
 const navToggle = document.getElementById('nav-toggle');
 const navPanel = document.getElementById('nav-panel');
 
@@ -91,4 +96,9 @@ navToggle.addEventListener('click', function() {
 const navModulesBut = document.getElementById('modules-btn');
 navModulesBut.addEventListener('click', function() {
   window.location.href = "/static/modules.html";
+});
+
+const navCategoriesBut = document.getElementById('categories-btn');
+navCategoriesBut.addEventListener('click', function() {
+  window.location.href = '/static/categories.html';
 });

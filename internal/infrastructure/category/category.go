@@ -105,7 +105,7 @@ func (cr *CategoryRoutes) GetModulesToCategory(c echo.Context) error {
 }
 
 func (cr *CategoryRoutes) InsertCategory(c echo.Context) error {
-	category := entity.Category{}
+	categoryToCreate := entity.CategoryToCreate{}
 	userIdStr := c.QueryParam("user_id")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
@@ -114,14 +114,14 @@ func (cr *CategoryRoutes) InsertCategory(c echo.Context) error {
 		})
 	}
 
-	category.OwnerId = userId
-	if err := c.Bind(&category); err != nil {
+	if err := c.Bind(&categoryToCreate); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})
 	}
+	categoryToCreate.OwnerId = userId
 
-	id, err := cr.CategoriesUC.InsertCategory(category)
+	id, err := cr.CategoriesUC.InsertCategory(categoryToCreate)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),

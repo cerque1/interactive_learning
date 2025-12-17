@@ -55,7 +55,7 @@ func (cr *CategoryRepo) GetLastInsertedCategoryId() (int, error) {
 	return last_id, nil
 }
 
-func (cr *CategoryRepo) InsertCategory(category entity.Category) error {
+func (cr *CategoryRepo) InsertCategory(category entity.CategoryToCreate) error {
 	result, err := cr.db.Exec("INSERT INTO categories(name, owner_id) "+
 		"VALUES($1, $2)", category.Name, category.OwnerId)
 	if err != nil {

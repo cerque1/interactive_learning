@@ -115,13 +115,13 @@ func (u *UseCase) InsertCard(card entity.Card) (int, error) {
 	return u.cardRepo.GetLastInsertedCardId()
 }
 
-func (u *UseCase) InsertCards(cards []entity.Card) ([]int, error) {
+func (u *UseCase) InsertCards(cards entity.CardsToAdd) ([]int, error) {
 	var ids []int
 	var err error
 	var curId int
 
-	for _, card := range cards {
-		err = u.cardRepo.InsertCard(card)
+	for _, card := range cards.Cards {
+		err = u.cardRepo.InsertCard(entity.Card{Id: card.Id, ParentModule: cards.ParentModule, Term: card.Term, Definition: card.Definition})
 		if err != nil {
 			return []int{}, err
 		}
@@ -175,7 +175,7 @@ func (u *UseCase) GetModuleById(moduleId int) (entity.Module, error) {
 	return module, nil
 }
 
-func (u *UseCase) InsertModule(module entity.Module) (int, []int, error) {
+func (u *UseCase) InsertModule(module entity.ModuleToCreate) (int, []int, error) {
 	u.moduleMutex.Lock()
 	defer u.moduleMutex.Unlock()
 
@@ -183,7 +183,7 @@ func (u *UseCase) InsertModule(module entity.Module) (int, []int, error) {
 	if err != nil {
 		return -1, []int{}, err
 	}
-	insertIds, err := u.InsertCards(module.Cards)
+	insertIds, err := u.InsertCards(entity.CardsToAdd{Cards: module.Cards, ParentModule: module.Id})
 	if err != nil {
 		return -1, []int{}, err
 	}
@@ -237,7 +237,7 @@ func (u *UseCase) GetCategoryById(id int) (entity.Category, error) {
 	return category, nil
 }
 
-func (u *UseCase) InsertCategory(category entity.Category) (int, error) {
+func (u *UseCase) InsertCategory(category entity.CategoryToCreate) (int, error) {
 	u.categoryMutex.Lock()
 	defer u.categoryMutex.Unlock()
 
@@ -245,7 +245,16 @@ func (u *UseCase) InsertCategory(category entity.Category) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	return u.categoryRepo.GetLastInsertedCategoryId()
+	new_id, err := u.categoryRepo.GetLastInsertedCategoryId()
+	if err != nil {
+		return -1, err
+	}
+	for _, module_id := range category.Modules {
+		if err = u.InsertModuleToCategory(new_id, module_id); err != nil {
+			return -1, err
+		}
+	}
+	return new_id, nil
 }
 
 func (u *UseCase) DeleteCategory(id int) error {

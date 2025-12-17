@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Категории</title>
+    <link rel="stylesheet" href="categories_style.css">
+</head>
+<body>
+    <header>
+        <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
+        <a id="head" href="/static/main.html" class="header-link">Заучка</a>
+        <div id="username" class="username"></div>
+    </header>
+
+    <main>
+        <nav id="nav-panel">
+            <h2>Навигация</h2>
+            <button id="main-btn">Главная</button>
+            <button id="modules-btn">Модули</button>
+            <button id="categories-btn">Категории</button>
+            <button id="results-btn">Результаты</button>
+        </nav>
+
+        <div class="header-actions" id="header-actions">
+            <button id="createCategoryBtn" class="create-btn">Создать категорию</button>
+        </div>
+
+        <section id="categories-section">
+            <h2 id="page-title">Мои категории</h2>
+            <div id="categories-container" class="cards-container"></div>
+            <div id="categories-empty" class="empty-message" style="display: none;">
+                Категории отсутствуют
+            </div>
+        </section>
+    </main>
+
+    <!-- Модальное окно создания категории -->
+    <div id="createCategoryModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Создать категорию</h3>
+                <span id="closeCategoryModal" class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="modal-error" class="error-message" style="display: none;"></div>
+                <div class="input-group">
+                    <label for="categoryName">Название категории</label>
+                    <input type="text" id="categoryName">
+                </div>
+                <div class="input-group">
+                    <label>Выберите модули</label>
+                    <div id="modules-list" class="modules-list"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="createCategoryConfirm" class="btn btn-primary">Создать</button>
+                <button id="cancelCategoryModal" class="btn btn-secondary">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="categories_script.js"></script>
+</body>
+</html>

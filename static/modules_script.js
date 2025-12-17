@@ -12,6 +12,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Загружаем данные пользователя асинхронно
   const myUserData = await loadUserName(token);
   const myId = myUserData ? myUserData.user?.id : null;
+
+  const headerActions = document.getElementById('header-actions');
+  if (!myId) {
+    headerActions.style.display = 'none';
+  }
   
   loadModules(token, userId, myId);
   setupModal(token, userId);
@@ -42,6 +47,26 @@ function loadUserName(token) {
   .catch(() => {
     return null;
   });
+}
+
+// Функция для создания карточки модуля (используется и при загрузке, и при создании)
+function createModuleCard(module_id, module_name, module_type) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  
+  // Определяем тип модуля для отображения
+  const typeText = module_type === 1 ? 'Открытый' : 'Приватный';
+  
+  card.innerHTML = `
+    <div class="card-header">
+      <span class="module-type">${typeText}</span>
+    </div>
+    <div class="card-title">${module_name}</div>
+  `;
+  card.onclick = () => {
+    window.location.href = `/static/module.html?module_id=${module_id}`;
+  };
+  return card;
 }
 
 function loadModules(token, userId, myId) {
@@ -75,14 +100,7 @@ function loadModules(token, userId, myId) {
     } else {
       emptyMsg.style.display = 'none';
       modules.modules.forEach(module => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="card-title">${module.name}</div>
-        `;
-        card.onclick = () => {
-          window.location.href = `/static/module.html?module_id=${module.id}`;
-        };
+        const card = createModuleCard(module.id, module.name, module.type);
         container.appendChild(card);
       });
     }
@@ -103,21 +121,38 @@ function loadModules(token, userId, myId) {
 function setupModal(token, userId) {
   const modal = document.getElementById('createModal');
   const createBtn = document.getElementById('createModuleBtn');
-  const headerActions = document.getElementById('header-actions');
   const closeBtn = document.getElementById('closeModal');
   const cancelBtn = document.getElementById('cancelModal');
   const confirmBtn = document.getElementById('createModuleConfirm');
-
-  // Скрываем кнопку создания, если указан чужой userId
-  if (userId) {
-    headerActions.style.display = 'none';
+  
+  // Создаем элемент для ошибок
+  let errorElement = document.querySelector('.error-message');
+  if (!errorElement) {
+    errorElement = document.createElement('div');
+    errorElement.className = 'error-message';
+    errorElement.style.cssText = `
+      margin-top: 12px;
+      color: #c75c5c;
+      font-weight: 600;
+      font-size: 14px;
+      display: none;
+    `;
+    const modalBody = document.querySelector('.modal-body');
+    modalBody.appendChild(errorElement);
   }
 
-  createBtn.onclick = () => modal.style.display = 'flex';
+  createBtn.onclick = () => {
+    modal.style.display = 'flex';
+    errorElement.style.display = 'none';
+    errorElement.textContent = '';
+  };
   
   function closeModal() {
     modal.style.display = 'none';
     document.getElementById('moduleName').value = '';
+    document.getElementById('moduleType').value = 'private';
+    errorElement.style.display = 'none';
+    errorElement.textContent = '';
   }
 
   closeBtn.onclick = closeModal;
@@ -130,9 +165,12 @@ function setupModal(token, userId) {
   confirmBtn.onclick = () => {
     const name = document.getElementById('moduleName').value.trim();
     const type = document.getElementById('moduleType').value;
+    
+    const typeInt = getTypeAsInt(type);
 
     if (!name) {
-      alert('Введите название модуля');
+      errorElement.textContent = 'Введите название модуля';
+      errorElement.style.display = 'block';
       return;
     }
 
@@ -142,7 +180,7 @@ function setupModal(token, userId) {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ name, type })
+      body: JSON.stringify({ name, type: typeInt })
     })
     .then(res => {
       if (res.status === 401) {
@@ -160,21 +198,32 @@ function setupModal(token, userId) {
       }
       return res.json();
     })
-    .then(() => {
+    .then(newModule => {
       closeModal();
-      loadModules(token, null, null); // Перезагружаем свои модули
+      
+      // Добавляем новую карточку в конец списка
+      const container = document.getElementById('modules-container');
+      const emptyMsg = document.getElementById('modules-empty');
+      
+      emptyMsg.style.display = 'none';
+      
+      // Используем ID из ответа API и выбранный тип
+      const newCard = createModuleCard(newModule.new_module_id, name, typeInt);
+      container.appendChild(newCard);
     })
     .catch(err => {
+      errorElement.style.display = 'block';
       if (err.message === 'BadRequest') {
-        alert('Невалидные данные');
+        errorElement.textContent = 'Невалидные данные';
       } else if (err.message === 'InternalServerError') {
-        alert('Попробуйте позже');
+        errorElement.textContent = 'Попробуйте позже';
       } else {
-        alert('Произошла ошибка');
+        errorElement.textContent = 'Произошла ошибка';
       }
     });
   };
 }
+
 
 // Навигационная панель (если элементы существуют)
 const navToggle = document.getElementById('nav-toggle');
@@ -188,23 +237,22 @@ if (navToggle && navPanel) {
 }
 
 const navModulesBut = document.getElementById('modules-btn');
-if (navModulesBut) {
-  navModulesBut.addEventListener('click', function() {
-    window.location.href = "/static/modules.html";
-  });
-}
+navModulesBut.addEventListener('click', function() {
+  window.location.href = "/static/modules.html";
+});
 
 const navMainBut = document.getElementById('main-btn');
-if (navMainBut) {
-  navMainBut.addEventListener('click', function() {
-    window.location.href = '/static/main.html';
-  });
-}
+navMainBut.addEventListener('click', function() {
+  window.location.href = '/static/main.html';
+});
+
+const navCategoriesBut = document.getElementById('categories-btn');
+navCategoriesBut.addEventListener('click', function() {
+  window.location.href = '/static/categories.html';
+});
 
 const head = document.getElementById('head');
-if (head) {
-  head.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.location.href = '/static/main.html';
-  });
-}
+head.addEventListener('click', (e) => {
+  e.preventDefault();
+  window.location.href = '/static/main.html';
+});

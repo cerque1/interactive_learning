@@ -9,7 +9,7 @@ COPY . .
 
 RUN go build -o /app/interactive_learning ./cmd/interactive_learning
 
-FROM alpine 
+FROM alpine:latest 
 
 WORKDIR /app
 

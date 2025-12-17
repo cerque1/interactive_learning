@@ -52,7 +52,7 @@ func (cr *ModulesRepo) GetLastInsertedModuleId() (int, error) {
 	return id, nil
 }
 
-func (mr *ModulesRepo) InsertModule(module entity.Module) error {
+func (mr *ModulesRepo) InsertModule(module entity.ModuleToCreate) error {
 	result, err := mr.db.Exec("INSERT INTO modules(name, owner_id, type) "+
 		"VALUES($1, $2, $3)", module.Name, module.OwnerId, module.Type)
 	if err != nil {

@@ -2,6 +2,7 @@ package module
 
 import (
 	"interactive_learning/internal/entity"
+	httputils "interactive_learning/internal/http_utils"
 	"interactive_learning/internal/usecase"
 	"log"
 	"net/http"
@@ -85,7 +86,8 @@ func (mr *ModuleRoutes) GetModuleById(c echo.Context) error {
 }
 
 func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
-	module := entity.Module{}
+	moduleReq := httputils.ModuleCreateReq{}
+	module := entity.ModuleToCreate{}
 	userIdStr := c.QueryParam("user_id")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
@@ -94,12 +96,15 @@ func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
 		})
 	}
 
-	module.OwnerId = userId
-	if err := c.Bind(&module); err != nil {
+	if err := c.Bind(&moduleReq); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})
 	}
+
+	module.OwnerId = userId
+	module.Name = moduleReq.Name
+	module.Type = moduleReq.Type
 
 	id, ids, err := mr.ModuleUC.InsertModule(module)
 	if err != nil {

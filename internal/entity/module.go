@@ -12,3 +12,11 @@ type Module struct {
 	OwnerId int    `json:"owner_id"`
 	Type    int    `json:"type"`
 }
+
+type ModuleToCreate struct {
+	Id      int         `json:"id"`
+	Name    string      `json:"name"`
+	Cards   []CardToAdd `json:"cards"`
+	OwnerId int         `json:"owner_id"`
+	Type    int         `json:"type"`
+}

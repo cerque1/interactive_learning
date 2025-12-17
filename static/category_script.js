@@ -100,6 +100,16 @@ navMainBut.addEventListener('click', function() {
   window.location.href = '/static/main.html';
 });
 
+const navModulesBut = document.getElementById('modules-btn');
+navModulesBut.addEventListener('click', function() {
+  window.location.href = "/static/modules.html";
+});
+
+const navCategoriesBut = document.getElementById('categories-btn');
+navCategoriesBut.addEventListener('click', function() {
+  window.location.href = '/static/categories.html';
+});
+
 document.getElementById('head').addEventListener('click', () => {
   window.location.href = '/static/main.html';
 });

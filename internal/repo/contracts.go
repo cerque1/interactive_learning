@@ -30,7 +30,7 @@ type ModuleRepo interface {
 	GetModulesByUser(userId int) ([]entity.Module, error)
 	GetModuleById(moduleId int) (entity.Module, error)
 	GetLastInsertedModuleId() (int, error)
-	InsertModule(module entity.Module) error
+	InsertModule(module entity.ModuleToCreate) error
 	DeleteModule(moduleId int) error
 }
 
@@ -38,7 +38,7 @@ type CategoryRepo interface {
 	GetCategoriesToUser(userId int) ([]entity.Category, error)
 	GetCategoryById(id int) (entity.Category, error)
 	GetLastInsertedCategoryId() (int, error)
-	InsertCategory(category entity.Category) error
+	InsertCategory(category entity.CategoryToCreate) error
 	DeleteCategory(id int) error
 }
 
