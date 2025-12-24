@@ -13,7 +13,6 @@ type Card struct {
 }
 
 type CardToAdd struct {
-	Id         int          `json:"id"`
 	Term       TextWithLang `json:"term"`
 	Definition TextWithLang `json:"definition"`
 }

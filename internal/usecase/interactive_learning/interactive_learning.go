@@ -1,6 +1,7 @@
 package interactivelearning
 
 import (
+	"errors"
 	"interactive_learning/internal/entity"
 	"interactive_learning/internal/repo"
 	"interactive_learning/internal/repo/persistent"
@@ -74,6 +75,18 @@ func (u *UseCase) GetUserInfoById(userId int, isFull bool) (entity.User, error) 
 	return user, nil
 }
 
+func (u *UseCase) GetCardOwnerId(cardId int) (int, error) {
+	parentModule, err := u.cardRepo.GetParentModuleId(cardId)
+	if err != nil {
+		return -1, err
+	}
+	moduleOwner, err := u.moduleRepo.GetModuleOwnerId(parentModule)
+	if err != nil {
+		return -1, err
+	}
+	return moduleOwner, nil
+}
+
 func (u *UseCase) IsContainsLogin(login string) (bool, error) {
 	u.usersMutex.Lock()
 	defer u.usersMutex.Unlock()
@@ -116,12 +129,15 @@ func (u *UseCase) InsertCard(card entity.Card) (int, error) {
 }
 
 func (u *UseCase) InsertCards(cards entity.CardsToAdd) ([]int, error) {
+	u.cardMutex.Lock()
+	defer u.cardMutex.Unlock()
+
 	var ids []int
 	var err error
 	var curId int
 
 	for _, card := range cards.Cards {
-		err = u.cardRepo.InsertCard(entity.Card{Id: card.Id, ParentModule: cards.ParentModule, Term: card.Term, Definition: card.Definition})
+		err = u.cardRepo.InsertCard(entity.Card{ParentModule: cards.ParentModule, Term: card.Term, Definition: card.Definition})
 		if err != nil {
 			return []int{}, err
 		}
@@ -134,11 +150,41 @@ func (u *UseCase) InsertCards(cards entity.CardsToAdd) ([]int, error) {
 	return ids, nil
 }
 
-func (u *UseCase) DeleteCard(cardId int) error {
+func (u *UseCase) UpdateCard(userId int, card entity.Card) error {
 	u.cardMutex.Lock()
 	defer u.cardMutex.Unlock()
 
+	ownerId, err := u.GetCardOwnerId(card.Id)
+	if err != nil {
+		return errors.New("bad card id")
+	} else if ownerId != userId {
+		return errors.New("unaccessable card")
+	}
+
+	return u.cardRepo.UpdateCard(card)
+}
+
+func (u *UseCase) DeleteCard(userId int, cardId int) error {
+	u.cardMutex.Lock()
+	defer u.cardMutex.Unlock()
+
+	ownerId, err := u.GetCardOwnerId(cardId)
+	if err != nil {
+		return errors.New("bad card id")
+	}
+
+	if ownerId != userId {
+		return errors.New("unaccessable card")
+	}
+
 	return u.cardRepo.DeleteCard(cardId)
+}
+
+func (u *UseCase) DeleteCardsToParentModule(moduleId int) error {
+	u.cardMutex.Lock()
+	defer u.cardMutex.Unlock()
+
+	return u.cardRepo.DeleteCardsToParentModule(moduleId)
 }
 
 func (u *UseCase) GetModulesByUser(userId int) ([]entity.Module, error) {
@@ -152,7 +198,7 @@ func (u *UseCase) GetModulesWithCardsByUser(userId int) ([]entity.Module, error)
 	}
 
 	for i := range modules {
-		cards, err := u.cardRepo.GetCardsByModule(userId)
+		cards, err := u.cardRepo.GetCardsByModule(modules[i].Id)
 		if err != nil {
 			return []entity.Module{}, err
 		}
@@ -175,6 +221,10 @@ func (u *UseCase) GetModuleById(moduleId int) (entity.Module, error) {
 	return module, nil
 }
 
+func (u *UseCase) GetModuleOwnerId(moduleId int) (int, error) {
+	return u.moduleRepo.GetModuleOwnerId(moduleId)
+}
+
 func (u *UseCase) InsertModule(module entity.ModuleToCreate) (int, []int, error) {
 	u.moduleMutex.Lock()
 	defer u.moduleMutex.Unlock()
@@ -194,10 +244,28 @@ func (u *UseCase) InsertModule(module entity.ModuleToCreate) (int, []int, error)
 	return id, insertIds, nil
 }
 
-func (u *UseCase) DeleteModule(moduleId int) error {
+func (u *UseCase) DeleteModule(userId int, moduleId int) error {
 	u.moduleMutex.Lock()
 	defer u.moduleMutex.Unlock()
 
+	ownerId, err := u.GetModuleOwnerId(moduleId)
+	if err != nil {
+		return errors.New("bad module id")
+	}
+
+	if ownerId != userId {
+		return errors.New("unaccessable module")
+	}
+
+	err = u.DeleteCardsToParentModule(moduleId)
+	if err != nil {
+		return err
+	}
+
+	err = u.DeleteModuleFromCategories(moduleId)
+	if err != nil {
+		return err
+	}
 	return u.moduleRepo.DeleteModule(moduleId)
 }
 
@@ -249,15 +317,29 @@ func (u *UseCase) InsertCategory(category entity.CategoryToCreate) (int, error) 
 	if err != nil {
 		return -1, err
 	}
-	for _, module_id := range category.Modules {
-		if err = u.InsertModuleToCategory(new_id, module_id); err != nil {
-			return -1, err
-		}
+	if err = u.InsertModulesToCategory(new_id, category.Modules); err != nil {
+		return -1, err
 	}
 	return new_id, nil
 }
 
-func (u *UseCase) DeleteCategory(id int) error {
+func (u *UseCase) DeleteCategory(userId int, id int) error {
+	u.categoryMutex.Lock()
+	defer u.categoryMutex.Unlock()
+
+	ownerId, err := u.categoryRepo.GetCategoryOwnerId(id)
+	if err != nil {
+		return errors.New("bad category id")
+	}
+
+	if ownerId != userId {
+		return errors.New("unaccessable category")
+	}
+
+	err = u.DeleteAllModulesFromCategory(id)
+	if err != nil {
+		return err
+	}
 	return u.categoryRepo.DeleteCategory(id)
 }
 
@@ -283,14 +365,20 @@ func (u *UseCase) GetModulesToCategory(categoryId int, isFull bool) ([]entity.Mo
 	return modules, nil
 }
 
-func (u *UseCase) InsertModuleToCategory(categoryId, moduleId int) error {
+func (u *UseCase) InsertModulesToCategory(categoryId int, modulesIds []int) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
 
-	return u.categoryModulesRepo.InsertModuleToCategory(categoryId, moduleId)
+	for _, moduleId := range modulesIds {
+		err := u.categoryModulesRepo.InsertModulesToCategory(categoryId, moduleId)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (u *UseCase) DeleteModuleFromCategory(categoryId, moduleId int) error {
+func (u *UseCase) DeleteModulesFromCategory(categoryId, moduleId int) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
 
@@ -302,4 +390,11 @@ func (u *UseCase) DeleteAllModulesFromCategory(categoryId int) error {
 	defer u.categoryModulesMutex.Unlock()
 
 	return u.categoryModulesRepo.DeleteAllModulesFromCategory(categoryId)
+}
+
+func (u *UseCase) DeleteModuleFromCategories(moduleId int) error {
+	u.categoryModulesMutex.Lock()
+	defer u.categoryModulesMutex.Unlock()
+
+	return u.categoryModulesRepo.DeleteModuleFromCategories(moduleId)
 }

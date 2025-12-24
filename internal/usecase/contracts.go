@@ -21,29 +21,33 @@ type Users interface {
 type Cards interface {
 	GetCardsByModule(moduleId int) ([]entity.Card, error)
 	GetCardById(cardId int) (entity.Card, error)
+	GetCardOwnerId(cardId int) (int, error)
 	InsertCard(card entity.Card) (int, error)
 	InsertCards(cards entity.CardsToAdd) ([]int, error)
-	DeleteCard(cardId int) error
+	UpdateCard(userId int, card entity.Card) error
+	DeleteCard(userId int, cardId int) error
+	DeleteCardsToParentModule(moduleId int) error
 }
 
 type Modules interface {
 	GetModulesByUser(userId int) ([]entity.Module, error)
 	GetModuleById(moduleId int) (entity.Module, error)
 	GetModulesWithCardsByUser(userId int) ([]entity.Module, error)
+	GetModuleOwnerId(moduleId int) (int, error)
 	InsertModule(module entity.ModuleToCreate) (int, []int, error)
-	DeleteModule(moduleId int) error
+	DeleteModule(userId int, moduleId int) error
 }
 
 type Categories interface {
 	GetCategoriesToUser(userId int, isFull bool) ([]entity.Category, error)
 	GetCategoryById(id int) (entity.Category, error)
 	InsertCategory(category entity.CategoryToCreate) (int, error)
-	DeleteCategory(id int) error
+	DeleteCategory(userId, categoryId int) error
 }
 
 type CategoryModules interface {
 	GetModulesToCategory(categoryId int, isFull bool) ([]entity.Module, error)
-	InsertModuleToCategory(categoryId, moduleId int) error
-	DeleteModuleFromCategory(categoryId, moduleId int) error
+	InsertModulesToCategory(categoryId int, modulesIds []int) error
+	DeleteModulesFromCategory(categoryId, moduleId int) error
 	DeleteAllModulesFromCategory(categoryId int) error
 }

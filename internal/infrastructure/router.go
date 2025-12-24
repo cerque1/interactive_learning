@@ -37,21 +37,26 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 	users.GET("/:id", usersRoutes.GetUserInfoById)
 
 	categories := v1.Group("/category")
-	categories.POST("/:category_id/add_module", categoriesRoutes.InsertModuleToCategory)
+	categories.POST("/:category_id/add_modules", categoriesRoutes.InsertModulesToCategory)
+	// categories.DELETE("/:category_id/delete_modules", )
 	categories.GET("/:id/modules", categoriesRoutes.GetModulesToCategory)
 	categories.GET("/:id", categoriesRoutes.GetCategoryById)
 	categories.GET("/to_user/:id", categoriesRoutes.GetCategoriesToUser)
 	categories.POST("/create", categoriesRoutes.InsertCategory)
+	categories.DELETE("/delete/:id", categoriesRoutes.DeleteCategory)
 
 	modules := v1.Group("/module")
 	modules.GET("/:id", moduleRoutes.GetModuleById)
 	modules.GET("/to_user/:id", moduleRoutes.GetModulesByUser)
 	modules.POST("/create", moduleRoutes.InsertModule)
+	modules.DELETE("/delete/:id", moduleRoutes.DeleteModule)
 
 	cards := v1.Group("/card")
 	cards.GET("/:id", cardRoutes.GetCardById)
 	cards.GET("/to_module/:id", cardRoutes.GetCardsByModule)
 	cards.POST("/insert_to_module", cardRoutes.InsertCards)
+	cards.PUT("/update/:id", cardRoutes.UpdateCard)
+	cards.DELETE("/delete/:id", cardRoutes.DeleteCard)
 
 	e.GET("/debug/pprof/*", echo.WrapHandler(http.DefaultServeMux))
 

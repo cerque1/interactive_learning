@@ -3,6 +3,7 @@ package card
 import (
 	"interactive_learning/internal/entity"
 	"interactive_learning/internal/usecase"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -74,6 +75,65 @@ func (cr *CardRoutes) InsertCards(c echo.Context) error {
 		})
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"new_id": id,
+		"new_ids": id,
 	})
+}
+
+func (cr *CardRoutes) UpdateCard(c echo.Context) error {
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
+	idStr := c.Param("id")
+	cardId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad id",
+		})
+	}
+
+	card := entity.Card{}
+	if err = c.Bind(&card); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "error parse data: " + err.Error(),
+		})
+	}
+	card.Id = cardId
+
+	err = cr.CardUC.UpdateCard(userId, card)
+	if err != nil {
+		log.Println("update card error", err.Error())
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "update card error",
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{})
+}
+
+func (cr *CardRoutes) DeleteCard(c echo.Context) error {
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
+	idStr := c.Param("id")
+	cardId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad id",
+		})
+	}
+
+	err = cr.CardUC.DeleteCard(userId, cardId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "delete card error " + err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{})
 }

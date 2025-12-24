@@ -11,6 +11,10 @@ type ModuleCreateReq struct {
 	Cards []entity.CardToAdd `json:"cards"`
 }
 
+type AddModulesToCategoryReq struct {
+	ModulesIds []int `json:"modules_ids"`
+}
+
 func GetModulesCreateReqFromJson(body []byte) (ModuleCreateReq, error) {
 	var mod ModuleCreateReq
 	err := json.Unmarshal(body, &mod)

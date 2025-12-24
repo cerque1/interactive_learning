@@ -25,20 +25,11 @@ func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
 	var id int
 	var err error
 
-	if idStr == "" {
-		id, err = strconv.Atoi(c.QueryParam("user_id"))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": "bad id " + idStr,
-			})
-		}
-	} else {
-		id, err = strconv.Atoi(idStr)
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": "bad id",
-			})
-		}
+	id, err = strconv.Atoi(idStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad id",
+		})
 	}
 
 	isWithCards, err := strconv.ParseBool(c.QueryParam("with_cards"))
@@ -116,4 +107,31 @@ func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
 		"new_module_id": id,
 		"new_cards_ids": ids,
 	})
+}
+
+func (mr *ModuleRoutes) DeleteModule(c echo.Context) error {
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		log.Println(err.Error())
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+			"error":   err.Error(),
+		})
+	}
+
+	idStr := c.Param("id")
+	moduleId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad id",
+		})
+	}
+
+	err = mr.ModuleUC.DeleteModule(userId, moduleId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "delete module error: " + err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{})
 }

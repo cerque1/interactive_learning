@@ -171,3 +171,64 @@ header h1 {
   #nav-panel button:hover {
     background-color: #8860D0;
   }
+
+  /* Добавьте в конец category_style.css */
+.primary-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  min-height: 40px;
+  box-sizing: border-box;
+  background-color: #007bfb;
+  color: #fff;
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#edit-category-btn {
+  margin-bottom: 16px;
+}
+
+/* Кнопки действий модулей */
+.module-actions {
+  display: none;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.module-actions.show {
+  display: flex;
+}
+
+.action-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #5674b9;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 123, 251, 0.2);
+}
+
+.action-btn:hover {
+  background: #ffffff;
+  transform: scale(1.05);
+  box-shadow: 0 3px 8px rgba(0, 123, 251, 0.3);
+}
+
+.action-btn.delete:hover {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.15);
+}

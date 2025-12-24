@@ -55,6 +55,17 @@ func (cr *CategoryRepo) GetLastInsertedCategoryId() (int, error) {
 	return last_id, nil
 }
 
+func (cr *CategoryRepo) GetCategoryOwnerId(categoryId int) (int, error) {
+	row := cr.db.QueryRow("SELECT owner_id FROM categories WHERE id = $1", categoryId)
+
+	var ownerId int
+	err := row.Scan(&ownerId)
+	if err != nil {
+		return -1, err
+	}
+	return ownerId, nil
+}
+
 func (cr *CategoryRepo) InsertCategory(category entity.CategoryToCreate) error {
 	result, err := cr.db.Exec("INSERT INTO categories(name, owner_id) "+
 		"VALUES($1, $2)", category.Name, category.OwnerId)
@@ -67,12 +78,10 @@ func (cr *CategoryRepo) InsertCategory(category entity.CategoryToCreate) error {
 }
 
 func (cr *CategoryRepo) DeleteCategory(id int) error {
-	result, err := cr.db.Exec("DELETE FROM categories "+
+	_, err := cr.db.Exec("DELETE FROM categories "+
 		"WHERE id = $1", id)
 	if err != nil {
 		return err
-	} else if count, _ := result.RowsAffected(); count == 0 {
-		return errors.New("delete category error")
 	}
 	return nil
 }

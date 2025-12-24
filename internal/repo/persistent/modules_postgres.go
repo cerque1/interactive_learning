@@ -42,8 +42,18 @@ func (cr *ModulesRepo) GetModuleById(moduleId int) (entity.Module, error) {
 	return m, nil
 }
 
-func (cr *ModulesRepo) GetLastInsertedModuleId() (int, error) {
-	row := cr.db.QueryRow("SELECT MAX(id) FROM modules")
+func (mr *ModulesRepo) GetLastInsertedModuleId() (int, error) {
+	row := mr.db.QueryRow("SELECT MAX(id) FROM modules")
+	var id int
+	err := row.Scan(&id)
+	if err != nil {
+		return -1, err
+	}
+	return id, nil
+}
+
+func (mr *ModulesRepo) GetModuleOwnerId(moduleId int) (int, error) {
+	row := mr.db.QueryRow("SELECT owner_id FROM modules WHERE id = $1", moduleId)
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
@@ -65,12 +75,9 @@ func (mr *ModulesRepo) InsertModule(module entity.ModuleToCreate) error {
 }
 
 func (mr *ModulesRepo) DeleteModule(moduleId int) error {
-	result, err := mr.db.Exec("DELETE FROM modules WHERE id = $1", moduleId)
+	_, err := mr.db.Exec("DELETE FROM modules WHERE id = $1", moduleId)
 	if err != nil {
 		return err
-	}
-	if count, _ := result.RowsAffected(); count == 0 {
-		return errors.New("insert module error")
 	}
 	return nil
 }

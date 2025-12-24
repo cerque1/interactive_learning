@@ -34,7 +34,7 @@ func (cmr *CategoryModulesRepo) GetModulesToCategory(categoryId int) ([]entity.M
 	return modules, nil
 }
 
-func (cmr *CategoryModulesRepo) InsertModuleToCategory(categoryId, moduleId int) error {
+func (cmr *CategoryModulesRepo) InsertModulesToCategory(categoryId, moduleId int) error {
 	result, err := cmr.db.Exec("INSERT INTO category_modules(category_id, module_id) "+
 		"VALUES($1, $2)", categoryId, moduleId)
 	if err != nil {
@@ -47,25 +47,28 @@ func (cmr *CategoryModulesRepo) InsertModuleToCategory(categoryId, moduleId int)
 }
 
 func (cmr *CategoryModulesRepo) DeleteModuleFromCategory(categoryId, moduleId int) error {
-	result, err := cmr.db.Exec("DELETE FROM category_modules "+
+	_, err := cmr.db.Exec("DELETE FROM category_modules "+
 		"WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
 	if err != nil {
 		return err
-	}
-	if count, _ := result.RowsAffected(); count == 0 {
-		return errors.New("delete module from category error")
 	}
 	return nil
 }
 
 func (cmr *CategoryModulesRepo) DeleteAllModulesFromCategory(categoryId int) error {
-	result, err := cmr.db.Exec("DELETE FROM category_modules "+
+	_, err := cmr.db.Exec("DELETE FROM category_modules "+
 		"WHERE category_id = $1", categoryId)
 	if err != nil {
 		return err
 	}
-	if count, _ := result.RowsAffected(); count == 0 {
-		return errors.New("delete modules from category error")
+	return nil
+}
+
+func (cmr *CategoryModulesRepo) DeleteModuleFromCategories(moduleId int) error {
+	_, err := cmr.db.Exec("DELETE FROM category_modules "+
+		"WHERE module_id = $1", moduleId)
+	if err != nil {
+		return err
 	}
 	return nil
 }

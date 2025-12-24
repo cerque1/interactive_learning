@@ -8,7 +8,7 @@
 </head>
 <body>
 <header>
-    <button id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+    <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
     <h1 id="head">Заучка</h1>
     <div id="username"></div>
 </header>
@@ -28,6 +28,10 @@
         <!-- Кнопка добавления карточек (видна только владельцу модуля) -->
         <button id="add-cards-btn" class="primary-btn" style="display:none;">
             Добавить карточки
+        </button>
+
+        <button id="edit-module-btn" class="primary-btn" style="display:none; margin-bottom: 16px;">
+            Редактировать модуль
         </button>
 
         <div id="cards-container" class="cards-container"></div>
@@ -58,6 +62,44 @@
         <div class="modal-footer">
             <button id="save-cards-btn" class="primary-btn" disabled>Сохранить</button>
             <button id="cancelAddCardsModal" class="secondary-btn">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно РЕДАКТИРОВАНИЯ - ТОЧНАЯ КОПИЯ first-row ДИЗАЙНА -->
+<div id="editCardModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Редактировать карточку</h3>
+            <span id="closeEditCardModal" class="close">&times;</span>
+        </div>
+
+        <div id="edit-card-error" class="error-message" style="display:none;"></div>
+
+        <div class="modal-body">
+            <div id="edit-card-row" class="card-row first-row">
+                <div>
+                    <label>Термин</label>
+                    <textarea id="edit-term-input" class="term-input" placeholder="Введите термин..."></textarea>
+                    <select id="edit-term-lang" class="term-lang">
+                        <option value="ru">🇷🇺 Русский</option>
+                        <option value="en">🇺🇸 English</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Определение</label>
+                    <textarea id="edit-definition-input" class="definition-input" placeholder="Введите определение..."></textarea>
+                    <select id="edit-definition-lang" class="definition-lang">
+                        <option value="ru">🇷🇺 Русский</option>
+                        <option value="en">🇺🇸 English</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button id="update-card-btn" class="primary-btn" disabled>Изменить</button>
+            <button id="cancelEditCardModal" class="secondary-btn">Отмена</button>
         </div>
     </div>
 </div>

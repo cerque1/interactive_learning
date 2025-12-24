@@ -64,6 +64,16 @@ func (cr *CardsRepo) GetLastInsertedCardId() (int, error) {
 	return id, nil
 }
 
+func (cr *CardsRepo) GetParentModuleId(cardId int) (int, error) {
+	row := cr.db.QueryRow("SELECT module_id FROM cards WHERE id = $1", cardId)
+	var id int
+	err := row.Scan(&id)
+	if err != nil {
+		return -1, err
+	}
+	return id, nil
+}
+
 func (cr *CardsRepo) InsertCard(card entity.Card) error {
 	result, err := cr.db.Exec("INSERT INTO cards(module_id, term_lang, term_text, def_lang, def_text) "+
 		"VALUES($1, $2, $3, $4, $5)", card.ParentModule, card.Term.Lang, card.Term.Text, card.Definition.Lang, card.Definition.Text)
@@ -76,13 +86,31 @@ func (cr *CardsRepo) InsertCard(card entity.Card) error {
 	return nil
 }
 
-func (cr *CardsRepo) DeleteCard(cardId int) error {
-	result, err := cr.db.Exec("DELETE FROM cards WHERE id = $1", cardId)
+func (cr *CardsRepo) UpdateCard(card entity.Card) error {
+	result, err := cr.db.Exec("UPDATE cards "+
+		"SET term_lang = $1, term_text = $2, def_lang = $3, def_text = $4 "+
+		"WHERE id = $5", card.Term.Lang, card.Term.Text, card.Definition.Lang, card.Definition.Text, card.Id)
 	if err != nil {
 		return err
 	}
 	if count, _ := result.RowsAffected(); count == 0 {
-		return errors.New("delete card error")
+		return errors.New("update card error")
+	}
+	return nil
+}
+
+func (cr *CardsRepo) DeleteCard(cardId int) error {
+	_, err := cr.db.Exec("DELETE FROM cards WHERE id = $1", cardId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cr *CardsRepo) DeleteCardsToParentModule(moduleId int) error {
+	_, err := cr.db.Exec("DELETE FROM cards WHERE module_id = $1", moduleId)
+	if err != nil {
+		return err
 	}
 	return nil
 }

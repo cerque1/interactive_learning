@@ -2,6 +2,7 @@ package category
 
 import (
 	"interactive_learning/internal/entity"
+	httputils "interactive_learning/internal/http_utils"
 	"interactive_learning/internal/usecase"
 	"net/http"
 	"slices"
@@ -132,7 +133,7 @@ func (cr *CategoryRoutes) InsertCategory(c echo.Context) error {
 	})
 }
 
-func (cr *CategoryRoutes) InsertModuleToCategory(c echo.Context) error {
+func (cr *CategoryRoutes) InsertModulesToCategory(c echo.Context) error {
 	userId, err := strconv.Atoi(c.QueryParam("user_id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -147,10 +148,10 @@ func (cr *CategoryRoutes) InsertModuleToCategory(c echo.Context) error {
 		})
 	}
 
-	moduleId, err := strconv.Atoi(c.QueryParam("module_id"))
-	if err != nil {
+	modulesIds := httputils.AddModulesToCategoryReq{}
+	if err = c.Bind(&modulesIds); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "bad module id",
+			"message": "bad data",
 		})
 	}
 
@@ -166,16 +167,74 @@ func (cr *CategoryRoutes) InsertModuleToCategory(c echo.Context) error {
 			"message": "you are not the owner",
 		})
 	}
-	if idx := slices.IndexFunc(category.Modules, func(elt entity.Module) bool { return elt.Id == moduleId }); idx >= 0 {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "module is already exists",
-		})
+	for _, moduleId := range modulesIds.ModulesIds {
+		if idx := slices.IndexFunc(category.Modules, func(elt entity.Module) bool { return elt.Id == moduleId }); idx >= 0 {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": "module is already exists",
+			})
+		}
 	}
 
-	if err = cr.CategoryModulesUC.InsertModuleToCategory(categoryId, moduleId); err != nil {
+	if err = cr.CategoryModulesUC.InsertModulesToCategory(categoryId, modulesIds.ModulesIds); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
+}
+
+func (cr *CategoryRoutes) DeleteCategory(c echo.Context) error {
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
+	idStr := c.Param("id")
+	cardId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad id",
+		})
+	}
+
+	err = cr.CategoriesUC.DeleteCategory(userId, cardId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "delete category error " + err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{})
+}
+
+func (cr *CategoryRoutes) DeleteModulesFromCategory(c echo.Context) error {
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
+	categoryId, err := strconv.Atoi(c.Param("category_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad category id",
+		})
+	}
+
+	category, err := cr.CategoriesUC.GetCategoryById(categoryId)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": err.Error(),
+		})
+	}
+
+	if category.OwnerId != userId {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "you are not the owner",
+		})
+	}
+
+	err := cr.CategoryModulesUC.
 }
