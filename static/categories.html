@@ -22,12 +22,17 @@
             <button id="results-btn">Результаты</button>
         </nav>
 
-        <div class="header-actions" id="header-actions">
-            <button id="createCategoryBtn" class="create-btn">Создать категорию</button>
-        </div>
+        <div id="nav-panel-overlay"></div>
 
         <section id="categories-section">
-            <h2 id="page-title">Мои категории</h2>
+            <div class="section-header">
+                <div class="section-actions">
+                    <button id="createCategoryBtn" class="create-btn">Создать категорию</button>
+                    <button id="editCategoriesBtn" class="primary-btn">Редактировать категории</button>
+                </div>
+                <h2 id="page-title">Мои категории</h2>
+            </div>
+
             <div id="categories-container" class="cards-container"></div>
             <div id="categories-empty" class="empty-message" style="display: none;">
                 Категории отсутствуют

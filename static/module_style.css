@@ -187,6 +187,8 @@ section h2 {
 /* Навигация */
 #nav-toggle {
   order: -1;
+  position: relative;
+  top: auto;
   background: none;
   border: none;
   color: white;
@@ -194,6 +196,11 @@ section h2 {
   cursor: pointer;
   user-select: none;
   z-index: 1003;
+  transition: left 0.3s ease;
+}
+
+#nav-toggle.open {
+  left: calc(20% + 20px);
 }
 
 #nav-panel {

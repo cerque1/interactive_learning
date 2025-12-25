@@ -378,7 +378,7 @@ func (u *UseCase) InsertModulesToCategory(categoryId int, modulesIds []int) erro
 	return nil
 }
 
-func (u *UseCase) DeleteModulesFromCategory(categoryId, moduleId int) error {
+func (u *UseCase) DeleteModuleFromCategory(categoryId, moduleId int) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
 
@@ -398,3 +398,17 @@ func (u *UseCase) DeleteModuleFromCategories(moduleId int) error {
 
 	return u.categoryModulesRepo.DeleteModuleFromCategories(moduleId)
 }
+
+// func (u *UseCase) DeleteModulesFromCategory(categoryId int, modulesIds []int) error {
+// 	u.categoryModulesMutex.Lock()
+// 	defer u.categoryModulesMutex.Unlock()
+
+// 	for moduleId, _ := range modulesIds {
+// 		err := u.DeleteModuleFromCategory(categoryId, moduleId)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+
+// 	return nil
+// }

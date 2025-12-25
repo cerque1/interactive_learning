@@ -38,7 +38,7 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 
 	categories := v1.Group("/category")
 	categories.POST("/:category_id/add_modules", categoriesRoutes.InsertModulesToCategory)
-	// categories.DELETE("/:category_id/delete_modules", )
+	categories.DELETE("/:category_id/:module_id/delete", categoriesRoutes.DeleteModuleFromCategory)
 	categories.GET("/:id/modules", categoriesRoutes.GetModulesToCategory)
 	categories.GET("/:id", categoriesRoutes.GetCategoryById)
 	categories.GET("/to_user/:id", categoriesRoutes.GetCategoriesToUser)

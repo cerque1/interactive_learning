@@ -10,7 +10,7 @@
 <header>
   <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
   <h1 id="head">Заучка</h1>
-  <div id="username"></div>
+  <div id="username">Загрузка...</div>
 </header>
 
 <main>
@@ -26,11 +26,11 @@
     <h2 id="category-name">Загрузка...</h2>
     
     <!-- Кнопка добавления модуля (видна только владельцу категории) -->
-    <button id="add-module-btn" class="primary-btn" style="display:none; margin-bottom: 16px;">
+    <button id="add-module-btn" class="primary-btn" style="display:none;">
       Добавить модуль
     </button>
     
-    <button id="edit-category-btn" class="primary-btn" style="display:none; margin-bottom: 16px;">
+    <button id="edit-category-btn" class="primary-btn" style="display:none;">
       Редактировать категорию
     </button>
 
@@ -38,6 +38,27 @@
     <div id="empty-message" class="empty-message" style="display:none;">В данной категории нет модулей</div>
   </section>
 </main>
+
+<!-- Модальное окно добавления модулей -->
+<div id="add-module-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Добавить модули в категорию</h3>
+      <button id="close-modal" class="close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="available-modules-container" class="checkbox-container"></div>
+      <div id="no-modules-message" class="empty-message" style="display: none;">
+        Нет доступных модулей для добавления
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="confirm-add-modules" class="primary-btn" disabled>
+        Добавить выбранные модули
+      </button>
+    </div>
+  </div>
+</div>
 
 <script src="category_script.js"></script>
 </body>

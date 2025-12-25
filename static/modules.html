@@ -8,7 +8,7 @@
 </head>
 <body>
   <header>
-    <button id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+    <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
     <a id="head" href="/static/main.html" class="header-link">Заучка</a>
     <div id="username"></div>
   </header>
@@ -22,12 +22,17 @@
       <button id="results-btn">Результаты</button>
     </nav>  
 
-    <div class="header-actions" id="header-actions">
-      <button id="createModuleBtn" class="create-btn">Создать модуль</button>
-    </div>
+    <div id="nav-panel-overlay"></div>
 
     <section id="modules-section">
-      <h2 id="page-title">Мои модули</h2>
+      <div class="section-header">
+        <div class="section-actions">
+          <button id="createModuleBtn" class="create-btn">Создать модуль</button>
+          <button id="editModulesBtn" class="primary-btn">Редактировать модули</button>
+        </div>
+        <h2 id="page-title">Мои модули</h2>
+      </div>
+
       <div id="modules-container" class="cards-container"></div>
       <div id="modules-empty" class="empty-message" style="display:none;">Модули отсутствуют</div>
     </section>
@@ -41,6 +46,7 @@
         <span id="closeModal" class="close">&times;</span>
       </div>
       <div class="modal-body">
+        <div id="create-error" class="error-message" style="display:none;"></div>
         <div class="input-group">
           <label for="moduleName">Название модуля</label>
           <input type="text" id="moduleName" />
@@ -54,7 +60,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button id="createModuleConfirm" class="btn btn-primary">Создать</button>
+        <button id="createModuleConfirm" class="btn btn-primary" disabled>Создать</button>
         <button id="cancelModal" class="btn btn-secondary">Отмена</button>
       </div>
     </div>

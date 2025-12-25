@@ -1,28 +1,7 @@
-window.addEventListener('DOMContentLoaded', async () => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
-    return;
-  }
+function getTypeAsInt(type) {
+  return type === 'public' ? 1 : 0;
+}
 
-  // Получаем id пользователя из URL
-  const params = new URLSearchParams(window.location.search);
-  const userId = params.get('id');
-  
-  // Загружаем данные пользователя асинхронно
-  const myUserData = await loadUserName(token);
-  const myId = myUserData ? myUserData.user?.id : null;
-
-  const headerActions = document.getElementById('header-actions');
-  if (!myId) {
-    headerActions.style.display = 'none';
-  }
-  
-  loadModules(token, userId, myId);
-  setupModal(token, userId);
-});
-
-// Функция возвращает данные пользователя
 function loadUserName(token) {
   return fetch('http://localhost:8080/api/v1/user/me?is_full=f', {
     headers: { 'Authorization': `Bearer ${token}` }
@@ -37,44 +16,112 @@ function loadUserName(token) {
   .then(userData => {
     if (userData && userData.user) {
       const usernameElem = document.getElementById('username');
-      usernameElem.textContent = userData.user.name || 'Пользователь';
-      usernameElem.onclick = () => {
-        window.location.href = '/static/profile.html';
-      };
+      if (usernameElem) {
+        usernameElem.textContent = userData.user.name || 'Пользователь';
+        usernameElem.style.cursor = 'pointer';
+        usernameElem.onclick = () => {
+          window.location.href = '/static/profile.html';
+        };
+      }
     }
-    return userData; // Возвращаем полные данные пользователя
+    return userData;
   })
-  .catch(() => {
-    return null;
-  });
+  .catch(() => null);
 }
 
-// Функция для создания карточки модуля (используется и при загрузке, и при создании)
-function createModuleCard(module_id, module_name, module_type) {
+let isEditMode = false;
+let currentCards = [];
+
+function createModuleCard(module) {
   const card = document.createElement('div');
   card.className = 'card';
+  card.dataset.moduleId = module.id;
+  card.style.cursor = 'pointer';
   
-  // Определяем тип модуля для отображения
-  const typeText = module_type === 1 ? 'Открытый' : 'Приватный';
+  const typeText = module.type === 1 ? 'Открытый' : 'Приватный';
   
   card.innerHTML = `
     <div class="card-header">
       <span class="module-type">${typeText}</span>
     </div>
-    <div class="card-title">${module_name}</div>
+    <div class="card-title">${module.name}</div>
+    <div class="card-actions">
+      <button class="module-action-btn edit" title="Редактировать модуль">✎</button>
+      <button class="module-action-btn delete" title="Удалить модуль">×</button>
+    </div>
   `;
-  card.onclick = () => {
-    window.location.href = `/static/module.html?module_id=${module_id}`;
-  };
+  
+  const deleteBtn = card.querySelector('.delete');
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handleDeleteModule(module.id, card);
+  });
+
+  const editBtn = card.querySelector('.edit');
+  editBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  card.addEventListener('click', (e) => {
+    if (!e.target.closest('.module-action-btn')) {
+      window.location.href = `/static/module.html?module_id=${module.id}`;
+    }
+  });
+  
+  currentCards.push(card);
   return card;
 }
 
-function loadModules(token, userId, myId) {
-  let user_id = myId;
-  if (userId != null) {
-    user_id = userId;
+function handleDeleteModule(moduleId, cardElement) {
+  if (!confirm('Вы уверены, что хотите удалить этот модуль? Все карточки в модуле тоже будут удалены.')) {
+    return;
   }
-  let url = `http://localhost:8080/api/v1/module/to_user/${user_id}`;
+
+  const token = localStorage.getItem('token');
+  
+  fetch(`http://localhost:8080/api/v1/module/delete/${moduleId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  .then(res => {
+    if (res.status === 401) {
+      window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+      return;
+    }
+    if (!res.ok) throw new Error(`Ошибка удаления: ${res.status}`);
+    return res.json();
+  })
+  .then(() => {
+    cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    cardElement.style.opacity = '0';
+    cardElement.style.transform = 'translateX(-20px)';
+    setTimeout(() => {
+      cardElement.remove();
+      currentCards = currentCards.filter(c => c !== cardElement);
+      checkEmptyState();
+    }, 300);
+  })
+  .catch(err => {
+    alert('Ошибка при удалении модуля: ' + err.message);
+  });
+}
+
+function checkEmptyState() {
+  const container = document.getElementById('modules-container');
+  const emptyMsg = document.getElementById('modules-empty');
+  
+  if (currentCards.length === 0) {
+    emptyMsg.style.display = 'block';
+  } else {
+    emptyMsg.style.display = 'none';
+  }
+}
+
+function loadModules(token, userId, myId) {
+  let user_id = myId || userId;
+  const url = `http://localhost:8080/api/v1/module/to_user/${user_id}`;
+
+  currentCards = [];
 
   fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` }
@@ -84,9 +131,7 @@ function loadModules(token, userId, myId) {
       window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
       return;
     }
-    if (!res.ok) {
-      throw new Error('Network response was not ok');
-    }
+    if (!res.ok) throw new Error('Network error');
     return res.json();
   })
   .then(modules => {
@@ -95,79 +140,93 @@ function loadModules(token, userId, myId) {
     const pageTitle = document.getElementById('page-title');
     
     container.innerHTML = '';
-    if (!modules.modules || modules.modules.length === 0) {
+    currentCards = [];
+    
+    if (!modules.modules?.length) {
       emptyMsg.style.display = 'block';
     } else {
       emptyMsg.style.display = 'none';
       modules.modules.forEach(module => {
-        const card = createModuleCard(module.id, module.name, module.type);
+        const card = createModuleCard(module);
         container.appendChild(card);
       });
+      
+      if (window.myId) {
+        setupEditMode();
+      }
     }
-
-    // Обновляем заголовок страницы
-    if (userId) {
-      pageTitle.textContent = 'Модули пользователя';
-    } else {
-      pageTitle.textContent = 'Мои модули';
-    }
+    
+    if (pageTitle) pageTitle.textContent = userId ? 'Модули пользователя' : 'Мои модули';
   })
-  .catch(() => {
-    document.getElementById('modules-empty').textContent = 'Попробуйте позже';
+  .catch(err => {
     document.getElementById('modules-empty').style.display = 'block';
   });
 }
 
-function setupModal(token, userId) {
+function setupEditMode() {
+  const editBtn = document.getElementById('editModulesBtn');
+  
+  if (!window.myId || !editBtn) {
+    if (editBtn) editBtn.style.display = 'none';
+    return;
+  }
+  
+  editBtn.style.display = 'inline-block';
+  
+  editBtn.addEventListener('click', () => {
+    isEditMode = !isEditMode;
+    
+    currentCards.forEach(card => {
+      if (isEditMode) {
+        card.classList.add('edit-mode');
+        const actions = card.querySelector('.card-actions');
+        if (actions) actions.classList.add('show');
+      } else {
+        card.classList.remove('edit-mode');
+        const actions = card.querySelector('.card-actions');
+        if (actions) actions.classList.remove('show');
+      }
+    });
+    
+    editBtn.textContent = isEditMode ? 'Сохранить изменения' : 'Редактировать модули';
+  });
+}
+
+function setupModal(token) {
   const modal = document.getElementById('createModal');
   const createBtn = document.getElementById('createModuleBtn');
   const closeBtn = document.getElementById('closeModal');
   const cancelBtn = document.getElementById('cancelModal');
   const confirmBtn = document.getElementById('createModuleConfirm');
-  
-  // Создаем элемент для ошибок
-  let errorElement = document.querySelector('.error-message');
-  if (!errorElement) {
-    errorElement = document.createElement('div');
-    errorElement.className = 'error-message';
-    errorElement.style.cssText = `
-      margin-top: 12px;
-      color: #c75c5c;
-      font-weight: 600;
-      font-size: 14px;
-      display: none;
-    `;
-    const modalBody = document.querySelector('.modal-body');
-    modalBody.appendChild(errorElement);
+  const moduleNameInput = document.getElementById('moduleName');
+  const errorElement = document.getElementById('create-error');
+
+  function validateForm() {
+    const name = moduleNameInput.value.trim();
+    confirmBtn.disabled = !name;
   }
 
-  createBtn.onclick = () => {
+  moduleNameInput.addEventListener('input', validateForm);
+
+  createBtn.addEventListener('click', () => {
     modal.style.display = 'flex';
     errorElement.style.display = 'none';
-    errorElement.textContent = '';
-  };
-  
+    moduleNameInput.value = '';
+    confirmBtn.disabled = true;
+  });
+
   function closeModal() {
     modal.style.display = 'none';
-    document.getElementById('moduleName').value = '';
-    document.getElementById('moduleType').value = 'private';
-    errorElement.style.display = 'none';
-    errorElement.textContent = '';
   }
 
   closeBtn.onclick = closeModal;
   cancelBtn.onclick = closeModal;
-
-  modal.onclick = (e) => {
-    if (e.target === modal) closeModal();
-  };
+  modal.onclick = e => e.target === modal && closeModal();
 
   confirmBtn.onclick = () => {
-    const name = document.getElementById('moduleName').value.trim();
+    const name = moduleNameInput.value.trim();
     const type = document.getElementById('moduleType').value;
     
-    const typeInt = getTypeAsInt(type);
-
     if (!name) {
       errorElement.textContent = 'Введите название модуля';
       errorElement.style.display = 'block';
@@ -176,83 +235,84 @@ function setupModal(token, userId) {
 
     fetch('http://localhost:8080/api/v1/module/create', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+      headers: { 
+        'Authorization': `Bearer ${token}`, 
+        'Content-Type': 'application/json' 
       },
-      body: JSON.stringify({ name, type: typeInt })
+      body: JSON.stringify({ name, type: getTypeAsInt(type) })
     })
     .then(res => {
-      if (res.status === 401) {
-        window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
-        return;
-      }
-      if (res.status === 400) {
-        throw new Error('BadRequest');
-      }
-      if (res.status === 500) {
-        throw new Error('InternalServerError');
-      }
-      if (!res.ok) {
-        throw new Error('Network response was not ok');
-      }
+      if (res.status === 401) throw new Error('401');
+      if (!res.ok) throw new Error(res.status);
       return res.json();
     })
-    .then(newModule => {
+    .then(data => {
       closeModal();
-      
-      // Добавляем новую карточку в конец списка
       const container = document.getElementById('modules-container');
-      const emptyMsg = document.getElementById('modules-empty');
-      
-      emptyMsg.style.display = 'none';
-      
-      // Используем ID из ответа API и выбранный тип
-      const newCard = createModuleCard(newModule.new_module_id, name, typeInt);
+      const newCard = createModuleCard({ 
+        id: data.new_module_id, 
+        name, 
+        type: getTypeAsInt(type) 
+      });
       container.appendChild(newCard);
+      document.getElementById('modules-empty').style.display = 'none';
     })
     .catch(err => {
+      errorElement.textContent = 'Ошибка создания модуля';
       errorElement.style.display = 'block';
-      if (err.message === 'BadRequest') {
-        errorElement.textContent = 'Невалидные данные';
-      } else if (err.message === 'InternalServerError') {
-        errorElement.textContent = 'Попробуйте позже';
-      } else {
-        errorElement.textContent = 'Произошла ошибка';
-      }
     });
   };
 }
 
-
-// Навигационная панель (если элементы существуют)
-const navToggle = document.getElementById('nav-toggle');
-const navPanel = document.getElementById('nav-panel');
-
-if (navToggle && navPanel) {
-  navToggle.addEventListener('click', function() {
+function setupNavigation() {
+  const navToggle = document.getElementById('nav-toggle');
+  const navPanel = document.getElementById('nav-panel');
+  const navOverlay = document.getElementById('nav-panel-overlay');
+  
+  function toggleNav() {
     navPanel.classList.toggle('open');
     navToggle.classList.toggle('open');
+    navOverlay.classList.toggle('open');
+    
+    const header = document.querySelector('header');
+    if (navPanel.classList.contains('open')) {
+      header.style.paddingLeft = '20%';
+    } else {
+      header.style.paddingLeft = '20px';
+    }
+  }
+
+  if (navToggle && navPanel && navOverlay) {
+    navToggle.addEventListener('click', toggleNav);
+    navOverlay.addEventListener('click', toggleNav);
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && navPanel.classList.contains('open')) {
+        toggleNav();
+      }
+    });
+  }
+
+  ['main-btn', 'modules-btn', 'categories-btn', 'results-btn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', () => window.location.href = `/static/${id.replace('-btn', '.html')}`);
   });
 }
 
-const navModulesBut = document.getElementById('modules-btn');
-navModulesBut.addEventListener('click', function() {
-  window.location.href = "/static/modules.html";
-});
+window.addEventListener('DOMContentLoaded', async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    return;
+  }
 
-const navMainBut = document.getElementById('main-btn');
-navMainBut.addEventListener('click', function() {
-  window.location.href = '/static/main.html';
-});
-
-const navCategoriesBut = document.getElementById('categories-btn');
-navCategoriesBut.addEventListener('click', function() {
-  window.location.href = '/static/categories.html';
-});
-
-const head = document.getElementById('head');
-head.addEventListener('click', (e) => {
-  e.preventDefault();
-  window.location.href = '/static/main.html';
+  const params = new URLSearchParams(window.location.search);
+  const userId = params.get('id');
+  
+  const myUserData = await loadUserName(token);
+  window.myId = myUserData?.user?.id;
+  
+  loadModules(token, userId, window.myId);
+  setupModal(token);
+  setupNavigation();
 });

@@ -112,10 +112,8 @@ func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
 func (mr *ModuleRoutes) DeleteModule(c echo.Context) error {
 	userId, err := strconv.Atoi(c.QueryParam("user_id"))
 	if err != nil {
-		log.Println(err.Error())
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "bad user id",
-			"error":   err.Error(),
 		})
 	}
 

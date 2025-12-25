@@ -128,9 +128,6 @@ window.addEventListener('DOMContentLoaded', () => {
         Number(currentUserId) === Number(moduleOwnerId)) {
       addCardsBtn.style.display = 'inline-block';
       editModuleBtn.style.display = 'inline-block';
-      console.log('✅ Кнопки показаны - пользователь является владельцем');
-    } else {
-      console.log('❌ Кнопки скрыты - условия не выполнены');
     }
   }
 

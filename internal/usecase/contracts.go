@@ -48,6 +48,7 @@ type Categories interface {
 type CategoryModules interface {
 	GetModulesToCategory(categoryId int, isFull bool) ([]entity.Module, error)
 	InsertModulesToCategory(categoryId int, modulesIds []int) error
-	DeleteModulesFromCategory(categoryId, moduleId int) error
+	DeleteModuleFromCategory(categoryId, moduleId int) error
 	DeleteAllModulesFromCategory(categoryId int) error
+	DeleteModuleFromCategories(moduleId int) error
 }

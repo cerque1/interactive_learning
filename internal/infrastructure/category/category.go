@@ -208,7 +208,7 @@ func (cr *CategoryRoutes) DeleteCategory(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{})
 }
 
-func (cr *CategoryRoutes) DeleteModulesFromCategory(c echo.Context) error {
+func (cr *CategoryRoutes) DeleteModuleFromCategory(c echo.Context) error {
 	userId, err := strconv.Atoi(c.QueryParam("user_id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -236,5 +236,18 @@ func (cr *CategoryRoutes) DeleteModulesFromCategory(c echo.Context) error {
 		})
 	}
 
-	err := cr.CategoryModulesUC.
+	moduleId, err := strconv.Atoi(c.Param("module_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad module id",
+		})
+	}
+
+	err = cr.CategoryModulesUC.DeleteModuleFromCategory(categoryId, moduleId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "error delete module from category",
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{})
 }
