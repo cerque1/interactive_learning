@@ -43,12 +43,14 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 	categories.GET("/:id", categoriesRoutes.GetCategoryById)
 	categories.GET("/to_user/:id", categoriesRoutes.GetCategoriesToUser)
 	categories.POST("/create", categoriesRoutes.InsertCategory)
+	categories.PUT("/rename/:id", categoriesRoutes.RenameCategory)
 	categories.DELETE("/delete/:id", categoriesRoutes.DeleteCategory)
 
 	modules := v1.Group("/module")
 	modules.GET("/:id", moduleRoutes.GetModuleById)
 	modules.GET("/to_user/:id", moduleRoutes.GetModulesByUser)
 	modules.POST("/create", moduleRoutes.InsertModule)
+	modules.PUT("/rename/:id", moduleRoutes.RenameModule)
 	modules.DELETE("/delete/:id", moduleRoutes.DeleteModule)
 
 	cards := v1.Group("/card")

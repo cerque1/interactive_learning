@@ -60,6 +60,10 @@ function createModuleCard(module) {
   const editBtn = card.querySelector('.edit');
   editBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    // Открываем модалку редактирования
+    if (window.openEditModuleModal) {
+      window.openEditModuleModal(module.id, module.name);
+    }
   });
 
   card.addEventListener('click', (e) => {
@@ -264,6 +268,107 @@ function setupModal(token) {
   };
 }
 
+function setupEditModuleModal(token) {
+  const editModal = document.getElementById('editModal');
+  const closeEditBtn = document.getElementById('closeEditModal');
+  const cancelEditBtn = document.getElementById('cancelEditModal');
+  const editConfirmBtn = document.getElementById('editModuleConfirm');
+  const editModuleNameInput = document.getElementById('editModuleName');
+  const editError = document.getElementById('edit-error');
+
+  let currentEditingModuleId = null;
+  let originalModuleName = '';
+
+  function validateEditForm() {
+    const newName = editModuleNameInput.value.trim();
+    const isValid = newName && newName !== originalModuleName;
+    editConfirmBtn.disabled = !isValid;
+    
+    if (newName === originalModuleName) {
+      editError.textContent = 'Название должно отличаться от текущего';
+      editError.style.display = 'block';
+    } else if (!newName) {
+      editError.style.display = 'none';
+    } else {
+      editError.style.display = 'none';
+    }
+  }
+
+  editModuleNameInput.addEventListener('input', validateEditForm);
+
+  function openEditModal(moduleId, currentName) {
+    currentEditingModuleId = moduleId;
+    originalModuleName = currentName;
+    editModuleNameInput.value = currentName;
+    editError.style.display = 'none';
+    editConfirmBtn.disabled = true;
+    editModal.style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    editModal.style.display = 'none';
+    currentEditingModuleId = null;
+    originalModuleName = '';
+  }
+
+  closeEditBtn.onclick = closeEditModal;
+  cancelEditBtn.onclick = closeEditModal;
+  editModal.onclick = e => e.target === editModal && closeEditModal();
+
+  editConfirmBtn.onclick = () => {
+    const newName = editModuleNameInput.value.trim();
+    
+    if (!newName || newName === originalModuleName) {
+      editError.textContent = 'Введите новое название модуля';
+      editError.style.display = 'block';
+      return;
+    }
+
+    fetch(`http://localhost:8080/api/v1/module/rename/${currentEditingModuleId}`, {
+      method: 'PUT',
+      headers: { 
+        'Authorization': `Bearer ${token}`, 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({ new_name: newName })
+    })
+    .then(res => {
+      if (res.status === 401) {
+        window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        return;
+      }
+      if (res.status === 400) {
+        throw new Error('Неверное название модуля');
+      }
+      if (res.status === 409) {
+        throw new Error('Модуль с таким названием уже существует');
+      }
+      if (!res.ok) {
+        throw new Error(`Ошибка: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then(() => {
+      // Найти и обновить карточку
+      const card = document.querySelector(`[data-module-id="${currentEditingModuleId}"]`);
+      if (card) {
+        const title = card.querySelector('.card-title');
+        if (title) {
+          title.textContent = newName;
+        }
+      }
+      closeEditModal();
+    })
+    .catch(err => {
+      editError.textContent = err.message || 'Ошибка переименования модуля';
+      editError.style.display = 'block';
+    });
+  };
+
+  // Функция для открытия модалки из createModuleCard
+  window.openEditModuleModal = openEditModal;
+}
+
 function setupNavigation() {
   const navToggle = document.getElementById('nav-toggle');
   const navPanel = document.getElementById('nav-panel');
@@ -314,5 +419,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   
   loadModules(token, userId, window.myId);
   setupModal(token);
+  setupEditModuleModal(token);
   setupNavigation();
 });

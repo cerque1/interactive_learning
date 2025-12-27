@@ -74,6 +74,18 @@ func (mr *ModulesRepo) InsertModule(module entity.ModuleToCreate) error {
 	return nil
 }
 
+func (mr *ModulesRepo) RenameModule(moduleId int, newName string) error {
+	result, err := mr.db.Exec("UPDATE modules "+
+		"SET name = $1 "+
+		"WHERE id = $2", newName, moduleId)
+	if err != nil {
+		return err
+	} else if count, _ := result.RowsAffected(); count == 0 {
+		return errors.New("rename module error")
+	}
+	return nil
+}
+
 func (mr *ModulesRepo) DeleteModule(moduleId int) error {
 	_, err := mr.db.Exec("DELETE FROM modules WHERE id = $1", moduleId)
 	if err != nil {

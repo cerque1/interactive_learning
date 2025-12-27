@@ -35,6 +35,7 @@ type ModuleRepo interface {
 	GetLastInsertedModuleId() (int, error)
 	GetModuleOwnerId(moduleId int) (int, error)
 	InsertModule(module entity.ModuleToCreate) error
+	RenameModule(moduleId int, newName string) error
 	DeleteModule(moduleId int) error
 }
 
@@ -44,6 +45,7 @@ type CategoryRepo interface {
 	GetLastInsertedCategoryId() (int, error)
 	GetCategoryOwnerId(categoryId int) (int, error)
 	InsertCategory(category entity.CategoryToCreate) error
+	RenameCategory(categoryId int, newName string) error
 	DeleteCategory(categoryId int) error
 }
 

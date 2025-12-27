@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заучивание - Заучка</title>
+    <link rel="stylesheet" href="learning_style.css" />
+</head>
+<body>
+    <header>
+        <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
+        <a id="head" href="/static/main.html" class="header-link">Заучка</a>
+        <div id="username"></div>
+    </header>
+
+    <main>
+        <nav id="nav-panel">
+            <h2>Навигация</h2>
+            <button id="main-btn">Главная</button>
+            <button id="modules-btn">Модули</button>
+            <button id="categories-btn">Категории</button>
+            <button id="results-btn">Результаты</button>
+        </nav>
+        <div id="nav-panel-overlay"></div>
+
+        <section id="study-section">
+            <div class="back-button-container">
+                <button id="backToModuleBtn" class="back-to-module-btn" style="display:none;">
+                    ← Назад к модулю
+                </button>
+            </div>
+            
+            <div class="module-header">
+                <h1 id="module-title">Загрузка модуля...</h1>
+                <div class="module-stats">
+                    <span id="total-cards">0</span> карточек
+                </div>
+                <!-- Счетчики под заголовком модуля -->
+                <div id="study-counters" class="study-counters">
+                    <div class="counter unknown">
+                        <span id="unknown-count">0</span>
+                        <div>Не знаю</div>
+                    </div>
+                    <div class="counter known">
+                        <span id="known-count">0</span>
+                        <div>Знаю</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="study-area">
+                <!-- Область для карточек -->
+                <div id="cards-container"></div>
+                
+                <!-- Индикатор прогресса -->
+                <div id="progress-bar">
+                    <div id="progress-fill"></div>
+                </div>
+            </div>
+
+            <!-- Экран результатов -->
+            <div id="results-screen" class="screen hidden">
+                <div class="results-content">
+                    <h2>Результаты</h2>
+                    <div class="results-stats">
+                        <div class="stat">
+                            <span id="results-known">0</span>
+                            <span>Знаю</span>
+                        </div>
+                        <div class="stat">
+                            <span id="results-unknown">0</span>
+                            <span>Не знаю</span>
+                        </div>
+                        <div class="stat">
+                            <span id="results-percent">0%</span>
+                            <span>Успешность</span>
+                        </div>
+                    </div>
+                    <div class="results-actions">
+                        <button id="repeat-btn" class="btn btn-primary">Повторить</button>
+                        <button id="back-to-module-btn" class="btn btn-secondary">К модулю</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="learning_script.js"></script>
+</body>
+</html>

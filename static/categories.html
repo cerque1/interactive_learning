@@ -65,6 +65,27 @@
         </div>
     </div>
 
+    <!-- Модальное окно редактирования категории -->
+    <div id="editCategoryModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Редактировать категорию</h3>
+                <span id="closeEditCategoryModal" class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="edit-category-error" class="error-message" style="display:none;"></div>
+                <div class="input-group">
+                    <label for="editCategoryName">Название категории</label>
+                    <input type="text" id="editCategoryName" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="editCategoryConfirm" class="btn btn-primary" disabled>Изменить</button>
+                <button id="cancelEditCategoryModal" class="btn btn-secondary">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <script src="categories_script.js"></script>
 </body>
 </html>

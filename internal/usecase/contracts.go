@@ -35,6 +35,7 @@ type Modules interface {
 	GetModulesWithCardsByUser(userId int) ([]entity.Module, error)
 	GetModuleOwnerId(moduleId int) (int, error)
 	InsertModule(module entity.ModuleToCreate) (int, []int, error)
+	RenameModule(userId, moduleId int, newName string) error
 	DeleteModule(userId int, moduleId int) error
 }
 
@@ -42,13 +43,14 @@ type Categories interface {
 	GetCategoriesToUser(userId int, isFull bool) ([]entity.Category, error)
 	GetCategoryById(id int) (entity.Category, error)
 	InsertCategory(category entity.CategoryToCreate) (int, error)
+	RenameCategory(userId, categoryId int, newName string) error
 	DeleteCategory(userId, categoryId int) error
 }
 
 type CategoryModules interface {
 	GetModulesToCategory(categoryId int, isFull bool) ([]entity.Module, error)
-	InsertModulesToCategory(categoryId int, modulesIds []int) error
-	DeleteModuleFromCategory(categoryId, moduleId int) error
-	DeleteAllModulesFromCategory(categoryId int) error
+	InsertModulesToCategory(userId, categoryId int, modulesIds []int) error
+	DeleteModuleFromCategory(userId, categoryId, moduleId int) error
+	DeleteAllModulesFromCategory(userId, categoryId int) error
 	DeleteModuleFromCategories(moduleId int) error
 }

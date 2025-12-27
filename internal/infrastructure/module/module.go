@@ -109,6 +109,38 @@ func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
 	})
 }
 
+func (mr *ModuleRoutes) RenameModule(c echo.Context) error {
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
+	idStr := c.Param("id")
+	moduleId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad id",
+		})
+	}
+
+	newName := httputils.RenameReq{}
+	if err = c.Bind(&newName); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad data",
+		})
+	}
+
+	err = mr.ModuleUC.RenameModule(userId, moduleId, newName.NewName)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{})
+}
+
 func (mr *ModuleRoutes) DeleteModule(c echo.Context) error {
 	userId, err := strconv.Atoi(c.QueryParam("user_id"))
 	if err != nil {

@@ -77,6 +77,18 @@ func (cr *CategoryRepo) InsertCategory(category entity.CategoryToCreate) error {
 	return nil
 }
 
+func (cr *CategoryRepo) RenameCategory(categoryId int, newName string) error {
+	result, err := cr.db.Exec("UPDATE categories "+
+		"SET name = $1 "+
+		"WHERE id = $2", newName, categoryId)
+	if err != nil {
+		return err
+	} else if count, _ := result.RowsAffected(); count == 0 {
+		return errors.New("rename category error")
+	}
+	return nil
+}
+
 func (cr *CategoryRepo) DeleteCategory(id int) error {
 	_, err := cr.db.Exec("DELETE FROM categories "+
 		"WHERE id = $1", id)

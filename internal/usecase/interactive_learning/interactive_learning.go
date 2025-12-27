@@ -6,6 +6,7 @@ import (
 	"interactive_learning/internal/repo"
 	"interactive_learning/internal/repo/persistent"
 	"interactive_learning/internal/utils/tokengenerator"
+	"slices"
 	"sync"
 )
 
@@ -244,6 +245,21 @@ func (u *UseCase) InsertModule(module entity.ModuleToCreate) (int, []int, error)
 	return id, insertIds, nil
 }
 
+func (u *UseCase) RenameModule(userId, moduleId int, newName string) error {
+	u.moduleMutex.Lock()
+	defer u.moduleMutex.Unlock()
+
+	ownerId, err := u.GetModuleOwnerId(moduleId)
+	if err != nil {
+		return errors.New("bad module id")
+	}
+	if ownerId != userId {
+		return errors.New("unaccessable module")
+	}
+
+	return u.moduleRepo.RenameModule(moduleId, newName)
+}
+
 func (u *UseCase) DeleteModule(userId int, moduleId int) error {
 	u.moduleMutex.Lock()
 	defer u.moduleMutex.Unlock()
@@ -252,7 +268,6 @@ func (u *UseCase) DeleteModule(userId int, moduleId int) error {
 	if err != nil {
 		return errors.New("bad module id")
 	}
-
 	if ownerId != userId {
 		return errors.New("unaccessable module")
 	}
@@ -317,26 +332,49 @@ func (u *UseCase) InsertCategory(category entity.CategoryToCreate) (int, error) 
 	if err != nil {
 		return -1, err
 	}
-	if err = u.InsertModulesToCategory(new_id, category.Modules); err != nil {
+	if err = u.InsertModulesToCategory(category.OwnerId, new_id, category.Modules); err != nil {
 		return -1, err
 	}
 	return new_id, nil
+}
+
+func (u *UseCase) IsCategoryOwner(userId, categoryId int) (bool, error) {
+	ownerId, err := u.categoryRepo.GetCategoryOwnerId(categoryId)
+	if err != nil {
+		return false, errors.New("bad category id")
+	}
+	if ownerId != userId {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (u *UseCase) RenameCategory(userId, categoryId int, newName string) error {
+	u.categoryModulesMutex.Lock()
+	defer u.categoryModulesMutex.Unlock()
+
+	isOwner, err := u.IsCategoryOwner(userId, categoryId)
+	if err != nil {
+		return err
+	} else if !isOwner {
+		return errors.New("unavailable category")
+	}
+
+	return u.categoryRepo.RenameCategory(categoryId, newName)
 }
 
 func (u *UseCase) DeleteCategory(userId int, id int) error {
 	u.categoryMutex.Lock()
 	defer u.categoryMutex.Unlock()
 
-	ownerId, err := u.categoryRepo.GetCategoryOwnerId(id)
+	isOwner, err := u.IsCategoryOwner(userId, id)
 	if err != nil {
-		return errors.New("bad category id")
+		return err
+	} else if !isOwner {
+		return errors.New("unavailable category")
 	}
 
-	if ownerId != userId {
-		return errors.New("unaccessable category")
-	}
-
-	err = u.DeleteAllModulesFromCategory(id)
+	err = u.DeleteAllModulesFromCategory(userId, id)
 	if err != nil {
 		return err
 	}
@@ -365,9 +403,23 @@ func (u *UseCase) GetModulesToCategory(categoryId int, isFull bool) ([]entity.Mo
 	return modules, nil
 }
 
-func (u *UseCase) InsertModulesToCategory(categoryId int, modulesIds []int) error {
+func (u *UseCase) InsertModulesToCategory(userId, categoryId int, modulesIds []int) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
+
+	category, err := u.categoryRepo.GetCategoryById(categoryId)
+	if err != nil {
+		return errors.New("bad category id")
+	}
+	if category.OwnerId != userId {
+		return errors.New("unavailable category")
+	}
+
+	for _, moduleId := range modulesIds {
+		if idx := slices.IndexFunc(category.Modules, func(elt entity.Module) bool { return elt.Id == moduleId }); idx >= 0 {
+			return errors.New("module is already exists")
+		}
+	}
 
 	for _, moduleId := range modulesIds {
 		err := u.categoryModulesRepo.InsertModulesToCategory(categoryId, moduleId)
@@ -378,16 +430,30 @@ func (u *UseCase) InsertModulesToCategory(categoryId int, modulesIds []int) erro
 	return nil
 }
 
-func (u *UseCase) DeleteModuleFromCategory(categoryId, moduleId int) error {
+func (u *UseCase) DeleteModuleFromCategory(userId, categoryId, moduleId int) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
+
+	isOwner, err := u.IsCategoryOwner(userId, categoryId)
+	if err != nil {
+		return err
+	} else if !isOwner {
+		return errors.New("unavailable category")
+	}
 
 	return u.categoryModulesRepo.DeleteModuleFromCategory(categoryId, moduleId)
 }
 
-func (u *UseCase) DeleteAllModulesFromCategory(categoryId int) error {
+func (u *UseCase) DeleteAllModulesFromCategory(userId, categoryId int) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
+
+	isOwner, err := u.IsCategoryOwner(userId, categoryId)
+	if err != nil {
+		return err
+	} else if !isOwner {
+		return errors.New("unavailable category")
+	}
 
 	return u.categoryModulesRepo.DeleteAllModulesFromCategory(categoryId)
 }

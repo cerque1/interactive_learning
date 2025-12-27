@@ -66,6 +66,27 @@
     </div>
   </div>
 
+  <!-- Модальное окно редактирования модуля -->
+  <div id="editModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Редактировать модуль</h3>
+        <span id="closeEditModal" class="close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="edit-error" class="error-message" style="display:none;"></div>
+        <div class="input-group">
+          <label for="editModuleName">Название модуля</label>
+          <input type="text" id="editModuleName" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="editModuleConfirm" class="btn btn-primary" disabled>Изменить</button>
+        <button id="cancelEditModal" class="btn btn-secondary">Отмена</button>
+      </div>
+    </div>
+  </div>
+
   <script src="modules_script.js"></script>
 </body>
 </html>

@@ -36,7 +36,7 @@ header {
   user-select: none;
 }
 
-#username {
+.username {
   font-weight: 600;
   color: #C1C8E4;
   cursor: pointer;
@@ -44,7 +44,7 @@ header {
   transition: color 0.3s ease;
 }
 
-#username:hover {
+.username:hover {
   color: #8860D0;
   text-decoration: underline;
 }

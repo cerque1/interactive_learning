@@ -5,7 +5,6 @@ import (
 	httputils "interactive_learning/internal/http_utils"
 	"interactive_learning/internal/usecase"
 	"net/http"
-	"slices"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -155,27 +154,38 @@ func (cr *CategoryRoutes) InsertModulesToCategory(c echo.Context) error {
 		})
 	}
 
-	category, err := cr.CategoriesUC.GetCategoryById(categoryId)
-	if err != nil {
+	if err = cr.CategoryModulesUC.InsertModulesToCategory(userId, categoryId, modulesIds.ModulesIds); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})
 	}
+	return c.JSON(http.StatusOK, map[string]interface{}{})
+}
 
-	if category.OwnerId != userId {
+func (cr *CategoryRoutes) RenameCategory(c echo.Context) error {
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "you are not the owner",
+			"message": "bad user id",
 		})
 	}
-	for _, moduleId := range modulesIds.ModulesIds {
-		if idx := slices.IndexFunc(category.Modules, func(elt entity.Module) bool { return elt.Id == moduleId }); idx >= 0 {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": "module is already exists",
-			})
-		}
+
+	categoryId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad category id",
+		})
 	}
 
-	if err = cr.CategoryModulesUC.InsertModulesToCategory(categoryId, modulesIds.ModulesIds); err != nil {
+	newName := httputils.RenameReq{}
+	if err = c.Bind(&newName); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad data",
+		})
+	}
+
+	err = cr.CategoriesUC.RenameCategory(userId, categoryId, newName.NewName)
+	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})
@@ -223,19 +233,6 @@ func (cr *CategoryRoutes) DeleteModuleFromCategory(c echo.Context) error {
 		})
 	}
 
-	category, err := cr.CategoriesUC.GetCategoryById(categoryId)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
-	}
-
-	if category.OwnerId != userId {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "you are not the owner",
-		})
-	}
-
 	moduleId, err := strconv.Atoi(c.Param("module_id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -243,7 +240,7 @@ func (cr *CategoryRoutes) DeleteModuleFromCategory(c echo.Context) error {
 		})
 	}
 
-	err = cr.CategoryModulesUC.DeleteModuleFromCategory(categoryId, moduleId)
+	err = cr.CategoryModulesUC.DeleteModuleFromCategory(userId, categoryId, moduleId)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"message": "error delete module from category",

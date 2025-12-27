@@ -2,10 +2,6 @@ let isEditMode = false;
 let currentCards = [];
 let windowMyId = null;
 
-function getTypeAsInt(type) {
-  return type === 'public' ? 1 : 0;
-}
-
 function loadUserName(token) {
   return fetch('http://localhost:8080/api/v1/user/me?is_full=f', {
     headers: { 'Authorization': `Bearer ${token}` }
@@ -54,6 +50,10 @@ function createCategoryCard(category) {
   const editBtn = card.querySelector('.edit');
   editBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    // Открываем модалку редактирования
+    if (window.openEditCategoryModal) {
+      window.openEditCategoryModal(category.id, category.name);
+    }
   });
 
   card.addEventListener('click', (e) => {
@@ -320,6 +320,107 @@ function showModalError(message) {
   errorEl.style.display = 'block';
 }
 
+function setupEditCategoryModal(token) {
+  const editModal = document.getElementById('editCategoryModal');
+  const closeEditBtn = document.getElementById('closeEditCategoryModal');
+  const cancelEditBtn = document.getElementById('cancelEditCategoryModal');
+  const editConfirmBtn = document.getElementById('editCategoryConfirm');
+  const editCategoryNameInput = document.getElementById('editCategoryName');
+  const editError = document.getElementById('edit-category-error');
+
+  let currentEditingCategoryId = null;
+  let originalCategoryName = '';
+
+  function validateEditForm() {
+    const newName = editCategoryNameInput.value.trim();
+    const isValid = newName && newName !== originalCategoryName;
+    editConfirmBtn.disabled = !isValid;
+    
+    if (newName === originalCategoryName) {
+      editError.textContent = 'Название должно отличаться от текущего';
+      editError.style.display = 'block';
+    } else if (!newName) {
+      editError.style.display = 'none';
+    } else {
+      editError.style.display = 'none';
+    }
+  }
+
+  editCategoryNameInput.addEventListener('input', validateEditForm);
+
+  function openEditModal(categoryId, currentName) {
+    currentEditingCategoryId = categoryId;
+    originalCategoryName = currentName;
+    editCategoryNameInput.value = currentName;
+    editError.style.display = 'none';
+    editConfirmBtn.disabled = true;
+    editModal.style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    editModal.style.display = 'none';
+    currentEditingCategoryId = null;
+    originalCategoryName = '';
+  }
+
+  closeEditBtn.onclick = closeEditModal;
+  cancelEditBtn.onclick = closeEditModal;
+  editModal.onclick = e => e.target === editModal && closeEditModal();
+
+  editConfirmBtn.onclick = () => {
+    const newName = editCategoryNameInput.value.trim();
+    
+    if (!newName || newName === originalCategoryName) {
+      editError.textContent = 'Введите новое название категории';
+      editError.style.display = 'block';
+      return;
+    }
+
+    fetch(`http://localhost:8080/api/v1/category/rename/${currentEditingCategoryId}`, {
+      method: 'PUT',
+      headers: { 
+        'Authorization': `Bearer ${token}`, 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({ new_name: newName })
+    })
+    .then(res => {
+      if (res.status === 401) {
+        window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        return;
+      }
+      if (res.status === 400) {
+        throw new Error('Неверное название категории');
+      }
+      if (res.status === 409) {
+        throw new Error('Категория с таким названием уже существует');
+      }
+      if (!res.ok) {
+        throw new Error(`Ошибка: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then(() => {
+      // Найти и обновить карточку
+      const card = document.querySelector(`[data-category-id="${currentEditingCategoryId}"]`);
+      if (card) {
+        const title = card.querySelector('.card-title');
+        if (title) {
+          title.textContent = newName;
+        }
+      }
+      closeEditModal();
+    })
+    .catch(err => {
+      editError.textContent = err.message || 'Ошибка переименования категории';
+      editError.style.display = 'block';
+    });
+  };
+
+  // Функция для открытия модалки из createCategoryCard
+  window.openEditCategoryModal = openEditModal;
+}
+
 function setupNavigation() {
   const navToggle = document.getElementById('nav-toggle');
   const navPanel = document.getElementById('nav-panel');
@@ -378,5 +479,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   
   loadCategories(token, userId, windowMyId);
   setupModal(token, userId, windowMyId);
+  setupEditCategoryModal(token);
   setupNavigation();
 });

@@ -25,8 +25,12 @@
     <section>
         <h2 id="module-name">Загрузка...</h2>
 
+        <button id="study-module-btn" class="primary-btn study-btn">
+            Начать заучивание
+        </button>
+
         <!-- Кнопка добавления карточек (видна только владельцу модуля) -->
-        <button id="add-cards-btn" class="primary-btn" style="display:none;">
+        <button id="add-cards-btn" class="primary-btn" style="display:none; margin-top: 12px;">
             Добавить карточки
         </button>
 
@@ -41,23 +45,20 @@
     </section>
 </main>
 
+<!-- Модалки без изменений -->
 <div id="addCardsModal" class="modal" style="display:none;">
     <div class="modal-content">
         <div class="modal-header">
             <h3>Добавить карточки</h3>
             <span id="closeAddCardsModal" class="close">&times;</span>
         </div>
-
         <div id="add-cards-error" class="error-message" style="display:none;"></div>
-
         <div class="modal-body">
             <button id="add-card-row-btn" class="secondary-btn" disabled>
                 Добавить карточку
             </button>
-
             <div id="card-rows-container" class="card-rows-container"></div>
         </div>
-
         <div class="modal-footer">
             <button id="save-cards-btn" class="primary-btn" disabled>Сохранить</button>
             <button id="cancelAddCardsModal" class="secondary-btn">Отмена</button>
@@ -71,9 +72,7 @@
             <h3>Редактировать карточку</h3>
             <span id="closeEditCardModal" class="close">&times;</span>
         </div>
-
         <div id="edit-card-error" class="error-message" style="display:none;"></div>
-
         <div class="modal-body">
             <div id="edit-card-row" class="card-row first-row">
                 <div>
@@ -94,7 +93,6 @@
                 </div>
             </div>
         </div>
-
         <div class="modal-footer">
             <button id="update-card-btn" class="primary-btn" disabled>Изменить</button>
             <button id="cancelEditCardModal" class="secondary-btn">Отмена</button>
