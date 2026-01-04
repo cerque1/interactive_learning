@@ -49,6 +49,7 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 	modules := v1.Group("/module")
 	modules.GET("/:id", moduleRoutes.GetModuleById)
 	modules.GET("/to_user/:id", moduleRoutes.GetModulesByUser)
+	modules.POST("/by_ids", moduleRoutes.GetModulesByIds)
 	modules.POST("/create", moduleRoutes.InsertModule)
 	modules.PUT("/rename/:id", moduleRoutes.RenameModule)
 	modules.DELETE("/delete/:id", moduleRoutes.DeleteModule)

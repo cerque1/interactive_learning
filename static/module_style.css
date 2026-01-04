@@ -247,6 +247,7 @@ section h2 {
 .primary-btn,
 .secondary-btn,
 #study-module-btn,
+#test-module-btn,
 #add-cards-btn,
 #edit-module-btn {
     padding: 8px 16px;
@@ -264,23 +265,28 @@ section h2 {
 
 .primary-btn,
 #study-module-btn,
+#test-module-btn,
 #add-cards-btn,
-#edit-module-btn {
+#edit-module-btn,
+#test-module-btn {
     background-color: #007bfb;
     color: #fff;
 }
 
 .primary-btn:hover:not(:disabled),
 #study-module-btn:hover:not(:disabled),
+#test-module-btn:hover:not(:disabled),
 #add-cards-btn:hover:not(:disabled),
-#edit-module-btn:hover:not(:disabled) {
+#edit-module-btn:hover:not(:disabled),
+#test-module-btn:hover:not(:disabled) {
     background-color: #0056b3;
     transform: translateY(-1px);
 }
 
 .primary-btn:disabled,
 .secondary-btn:disabled,
-#study-module-btn:disabled {
+#study-module-btn:disabled,
+#test-module-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }

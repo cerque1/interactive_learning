@@ -32,6 +32,7 @@ type Cards interface {
 type Modules interface {
 	GetModulesByUser(userId int) ([]entity.Module, error)
 	GetModuleById(moduleId int) (entity.Module, error)
+	GetModulesByIds(modulesIds []int, isFull bool) ([]entity.Module, error)
 	GetModulesWithCardsByUser(userId int) ([]entity.Module, error)
 	GetModuleOwnerId(moduleId int) (int, error)
 	InsertModule(module entity.ModuleToCreate) (int, []int, error)

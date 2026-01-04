@@ -76,6 +76,30 @@ func (mr *ModuleRoutes) GetModuleById(c echo.Context) error {
 	})
 }
 
+func (mr *ModuleRoutes) GetModulesByIds(c echo.Context) error {
+	modulesIds := httputils.GetModulesByIdsReq{}
+	if err := c.Bind(&modulesIds); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad data",
+		})
+	}
+
+	isWithCards, err := strconv.ParseBool(c.QueryParam("with_cards"))
+	if err != nil {
+		isWithCards = false
+	}
+
+	modules, err := mr.ModuleUC.GetModulesByIds(modulesIds.ModulesIds, isWithCards)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"modules": modules,
+	})
+}
+
 func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
 	moduleReq := httputils.ModuleCreateReq{}
 	module := entity.ModuleToCreate{}

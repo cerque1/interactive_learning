@@ -12,11 +12,18 @@ window.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // ✅ ОБРАБОТЧИК КНОПКИ ЗАУЧИВАНИЯ
     const studyModuleBtn = document.getElementById('study-module-btn');
+    const testModuleBtn = document.getElementById('test-module-btn');
+
     if (studyModuleBtn && moduleId) {
         studyModuleBtn.addEventListener('click', () => {
-            window.location.href = `/static/learning.html?module_id=${moduleId}`;
+            window.location.href = `/static/learning.html?modules_ids=${moduleId}`;
+        });
+    }
+
+    if (testModuleBtn && moduleId) {
+        testModuleBtn.addEventListener('click', () => {
+            window.location.href = `/static/test.html?modules_ids=${moduleId}`;
         });
     }
 
@@ -271,22 +278,24 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // Обработчик кнопки редактирования модуля
-    editModuleBtn.addEventListener('click', () => {
-        isEditMode = !isEditMode;
-        
-        const cards = document.querySelectorAll('.card');
-        cards.forEach(card => {
-            if (isEditMode) {
-                card.classList.add('edit-mode');
-                card.querySelector('.card-actions').classList.add('show');
-            } else {
-                card.classList.remove('edit-mode');
-                card.querySelector('.card-actions').classList.remove('show');
-            }
+    if (editModuleBtn) {
+        editModuleBtn.addEventListener('click', () => {
+            isEditMode = !isEditMode;
+            
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                if (isEditMode) {
+                    card.classList.add('edit-mode');
+                    card.querySelector('.card-actions').classList.add('show');
+                } else {
+                    card.classList.remove('edit-mode');
+                    card.querySelector('.card-actions').classList.remove('show');
+                }
+            });
+            
+            editModuleBtn.textContent = isEditMode ? 'Сохранить изменения' : 'Редактировать модуль';
         });
-        
-        editModuleBtn.textContent = isEditMode ? 'Сохранить изменения' : 'Редактировать модуль';
-    });
+    }
 
     // Обработчики кнопок действий карточек
     document.addEventListener('click', (e) => {
@@ -395,19 +404,23 @@ window.addEventListener('DOMContentLoaded', () => {
         addCardsModal.style.display = 'none';
     }
 
-    addCardsBtn.addEventListener('click', () => {
-        if (!(currentUserId && moduleOwnerId && Number(currentUserId) === Number(moduleOwnerId))) {
-            return;
-        }
-        openModal();
-    });
+    if (addCardsBtn) {
+        addCardsBtn.addEventListener('click', () => {
+            if (!(currentUserId && moduleOwnerId && Number(currentUserId) === Number(moduleOwnerId))) {
+                return;
+            }
+            openModal();
+        });
+    }
 
-    closeAddCardsModal.addEventListener('click', closeModal);
-    cancelAddCardsModal.addEventListener('click', closeModal);
+    if (closeAddCardsModal) closeAddCardsModal.addEventListener('click', closeModal);
+    if (cancelAddCardsModal) cancelAddCardsModal.addEventListener('click', closeModal);
 
-    addCardsModal.addEventListener('click', (e) => {
-        if (e.target === addCardsModal) closeModal();
-    });
+    if (addCardsModal) {
+        addCardsModal.addEventListener('click', (e) => {
+            if (e.target === addCardsModal) closeModal();
+        });
+    }
 
     function addOneRow() {
         if (cardRowCount >= MAX_ROWS) return;
@@ -437,114 +450,118 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    addCardRowBtn.addEventListener('click', () => {
-        if (cardRowCount >= MAX_ROWS || !allRowsFilled()) return;
-        addOneRow();
-        updateButtonsState();
-    });
+    if (addCardRowBtn) {
+        addCardRowBtn.addEventListener('click', () => {
+            if (cardRowCount >= MAX_ROWS || !allRowsFilled()) return;
+            addOneRow();
+            updateButtonsState();
+        });
+    }
 
     // Обработчик сохранения карточек
-    saveCardsBtn.addEventListener('click', () => {
-        addCardsError.style.display = 'none';
-        addCardsError.textContent = '';
+    if (saveCardsBtn) {
+        saveCardsBtn.addEventListener('click', () => {
+            addCardsError.style.display = 'none';
+            addCardsError.textContent = '';
 
-        const rows = cardRowsContainer.querySelectorAll('.card-row');
-        if (rows.length === 0) {
-            addCardsError.textContent = 'Добавьте хотя бы одну карточку';
-            addCardsError.style.display = 'block';
-            return;
-        }
-
-        const cardsPayload = [];
-        for (const row of rows) {
-            const term = row.querySelector('.term-input').value.trim();
-            const def = row.querySelector('.definition-input').value.trim();
-            const termLang = row.querySelector('.term-lang').value;
-            const defLang = row.querySelector('.definition-lang').value;
-
-            if (!term || !def) {
-                addCardsError.textContent = 'Все поля терминов и определений должны быть заполнены';
+            const rows = cardRowsContainer.querySelectorAll('.card-row');
+            if (rows.length === 0) {
+                addCardsError.textContent = 'Добавьте хотя бы одну карточку';
                 addCardsError.style.display = 'block';
                 return;
             }
 
-            cardsPayload.push({
-                term: { text: term, lang: termLang },
-                definition: { text: def, lang: defLang }
-            });
-        }
+            const cardsPayload = [];
+            for (const row of rows) {
+                const term = row.querySelector('.term-input').value.trim();
+                const def = row.querySelector('.definition-input').value.trim();
+                const termLang = row.querySelector('.term-lang').value;
+                const defLang = row.querySelector('.definition-lang').value;
 
-        fetch(`http://localhost:8080/api/v1/card/insert_to_module`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ cards: cardsPayload, parent_module: parseInt(moduleId) })
-        })
-        .then(res => {
-            if (res.status === 401) {
-                window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
-                return;
-            }
-            if (res.status === 400) throw new Error('Неверные данные');
-            if (res.status === 500) throw new Error('Ошибка сервера');
-            if (!res.ok) throw new Error('Ошибка сохранения карточек');
-            return res.json();
-        })
-        .then(response => {
-            closeModal();
-            
-            const newIds = response.new_ids || [];
-            if (!newIds.length) {
-                showSuccessMessage('Карточки сохранены, но ID не получены');
-                return;
-            }
-            
-            const cardsContainer = document.getElementById('cards-container');
-            const emptyMessage = document.getElementById('empty-message');
-            
-            emptyMessage.style.display = 'none';
-            
-            newIds.forEach((cardId, index) => {
-                const newCardData = cardsPayload[index];
-                const cardElem = document.createElement('div');
-                cardElem.className = 'card';
-                cardElem.dataset.cardId = cardId;
-                cardElem.innerHTML = `
-                    <div class="card-title">${newCardData.term.text}</div>
-                    <div class="card-definition">${newCardData.definition.text}</div>
-                    <div class="card-languages">
-                        <span class="lang-badge">${newCardData.term.lang.toUpperCase()}</span>
-                        <div class="card-actions">
-                            <button class="action-btn delete" title="Удалить карточку">×</button>
-                            <button class="action-btn edit" title="Редактировать карточку">✎</button>
-                        </div>
-                        <span class="lang-badge">${newCardData.definition.lang.toUpperCase()}</span>
-                    </div>
-                `;
-                
-                cardElem.querySelector('.delete').addEventListener('click', handleDeleteClick);
-                cardElem.querySelector('.edit').addEventListener('click', handleEditClick);
-                
-                cardsContainer.appendChild(cardElem);
-                
-                cardElem.style.opacity = '0';
-                cardElem.style.transform = 'translateY(20px)';
-                requestAnimationFrame(() => {
-                    cardElem.style.transition = 'all 0.4s ease';
-                    cardElem.style.opacity = '1';
-                    cardElem.style.transform = 'translateY(0)';
+                if (!term || !def) {
+                    addCardsError.textContent = 'Все поля терминов и определений должны быть заполнены';
+                    addCardsError.style.display = 'block';
+                    return;
+                }
+
+                cardsPayload.push({
+                    term: { text: term, lang: termLang },
+                    definition: { text: def, lang: defLang }
                 });
+            }
+
+            fetch(`http://localhost:8080/api/v1/card/insert_to_module`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ cards: cardsPayload, parent_module: parseInt(moduleId) })
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+                    return;
+                }
+                if (res.status === 400) throw new Error('Неверные данные');
+                if (res.status === 500) throw new Error('Ошибка сервера');
+                if (!res.ok) throw new Error('Ошибка сохранения карточек');
+                return res.json();
+            })
+            .then(response => {
+                closeModal();
+                
+                const newIds = response.new_ids || [];
+                if (!newIds.length) {
+                    showSuccessMessage('Карточки сохранены, но ID не получены');
+                    return;
+                }
+                
+                const cardsContainer = document.getElementById('cards-container');
+                const emptyMessage = document.getElementById('empty-message');
+                
+                emptyMessage.style.display = 'none';
+                
+                newIds.forEach((cardId, index) => {
+                    const newCardData = cardsPayload[index];
+                    const cardElem = document.createElement('div');
+                    cardElem.className = 'card';
+                    cardElem.dataset.cardId = cardId;
+                    cardElem.innerHTML = `
+                        <div class="card-title">${newCardData.term.text}</div>
+                        <div class="card-definition">${newCardData.definition.text}</div>
+                        <div class="card-languages">
+                            <span class="lang-badge">${newCardData.term.lang.toUpperCase()}</span>
+                            <div class="card-actions">
+                                <button class="action-btn delete" title="Удалить карточку">×</button>
+                                <button class="action-btn edit" title="Редактировать карточку">✎</button>
+                            </div>
+                            <span class="lang-badge">${newCardData.definition.lang.toUpperCase()}</span>
+                        </div>
+                    `;
+                    
+                    cardElem.querySelector('.delete').addEventListener('click', handleDeleteClick);
+                    cardElem.querySelector('.edit').addEventListener('click', handleEditClick);
+                    
+                    cardsContainer.appendChild(cardElem);
+                    
+                    cardElem.style.opacity = '0';
+                    cardElem.style.transform = 'translateY(20px)';
+                    requestAnimationFrame(() => {
+                        cardElem.style.transition = 'all 0.4s ease';
+                        cardElem.style.opacity = '1';
+                        cardElem.style.transform = 'translateY(0)';
+                    });
+                });
+                
+                showSuccessMessage(`${newIds.length} карточек${newIds.length === 1 ? 'а' : 'ек'} успешно добавлено${newIds.length === 1 ? '' : 'ы'}`);
+            })
+            .catch(err => {
+                addCardsError.textContent = err.message || 'Ошибка сохранения карточек';
+                addCardsError.style.display = 'block';
             });
-            
-            showSuccessMessage(`${newIds.length} карточек${newIds.length === 1 ? 'а' : 'ек'} успешно добавлено${newIds.length === 1 ? '' : 'ы'}`);
-        })
-        .catch(err => {
-            addCardsError.textContent = err.message || 'Ошибка сохранения карточек';
-            addCardsError.style.display = 'block';
         });
-    });
+    }
 
     // ====== ЛОГИКА МОДАЛКИ РЕДАКТИРОВАНИЯ КАРТОЧКИ ======
     const editCardModal = document.getElementById('editCardModal');
@@ -559,87 +576,95 @@ window.addEventListener('DOMContentLoaded', () => {
         return editTermInput.value.trim() && editDefInput.value.trim();
     }
 
-    editTermInput.addEventListener('input', () => {
-        updateCardBtn.disabled = !checkEditFieldsFilled();
-    });
+    if (editTermInput) {
+        editTermInput.addEventListener('input', () => {
+            updateCardBtn.disabled = !checkEditFieldsFilled();
+        });
+    }
 
-    editDefInput.addEventListener('input', () => {
-        updateCardBtn.disabled = !checkEditFieldsFilled();
-    });
-
-    closeEditCardModal.addEventListener('click', closeEditModal);
-    cancelEditCardModal.addEventListener('click', closeEditModal);
-
-    editCardModal.addEventListener('click', (e) => {
-        if (e.target === editCardModal) closeEditModal();
-    });
+    if (editDefInput) {
+        editDefInput.addEventListener('input', () => {
+            updateCardBtn.disabled = !checkEditFieldsFilled();
+        });
+    }
 
     function closeEditModal() {
-        editCardModal.style.display = 'none';
+        if (editCardModal) editCardModal.style.display = 'none';
         window.currentEditingCardId = null;
     }
 
-    updateCardBtn.addEventListener('click', () => {
-        editCardError.style.display = 'none';
-        editCardError.textContent = '';
+    if (closeEditCardModal) closeEditCardModal.addEventListener('click', closeEditModal);
+    if (cancelEditCardModal) cancelEditCardModal.addEventListener('click', closeEditModal);
 
-        const term = editTermInput.value.trim();
-        const definition = editDefInput.value.trim();
-        const termLang = document.getElementById('edit-term-lang').value;
-        const defLang = document.getElementById('edit-definition-lang').value;
+    if (editCardModal) {
+        editCardModal.addEventListener('click', (e) => {
+            if (e.target === editCardModal) closeEditModal();
+        });
+    }
 
-        if (!term || !definition) {
-            editCardError.textContent = 'Все поля терминов и определений должны быть заполнены';
-            editCardError.style.display = 'block';
-            return;
-        }
+    if (updateCardBtn) {
+        updateCardBtn.addEventListener('click', () => {
+            editCardError.style.display = 'none';
+            editCardError.textContent = '';
 
-        const cardId = window.currentEditingCardId;
-        if (!cardId) {
-            editCardError.textContent = 'Ошибка: ID карточки не найден';
-            editCardError.style.display = 'block';
-            return;
-        }
+            const term = editTermInput.value.trim();
+            const definition = editDefInput.value.trim();
+            const termLang = document.getElementById('edit-term-lang').value;
+            const defLang = document.getElementById('edit-definition-lang').value;
 
-        fetch(`http://localhost:8080/api/v1/card/update/${cardId}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                term: { text: term, lang: termLang },
-                definition: { text: definition, lang: defLang }
-            })
-        })
-        .then(res => {
-            if (res.status === 401) {
-                window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+            if (!term || !definition) {
+                editCardError.textContent = 'Все поля терминов и определений должны быть заполнены';
+                editCardError.style.display = 'block';
                 return;
             }
-            if (res.status === 400) throw new Error('Неверные данные');
-            if (res.status === 404) throw new Error('Карточка не найдена');
-            if (res.status === 403) throw new Error('Нет прав для редактирования');
-            if (res.status === 500) throw new Error('Ошибка сервера');
-            if (!res.ok) throw new Error('Ошибка обновления карточки');
-            return res.json();
-        })
-        .then(() => {
-            closeEditModal();
-            
-            const card = document.querySelector(`[data-card-id="${cardId}"]`);
-            if (card) {
-                card.querySelector('.card-title').textContent = term;
-                card.querySelector('.card-definition').textContent = definition;
-                card.querySelector('.lang-badge').textContent = termLang.toUpperCase();
-                card.querySelector('.lang-badge:last-child').textContent = defLang.toUpperCase();
+
+            const cardId = window.currentEditingCardId;
+            if (!cardId) {
+                editCardError.textContent = 'Ошибка: ID карточки не найден';
+                editCardError.style.display = 'block';
+                return;
             }
-            
-            showSuccessMessage('Карточка успешно обновлена');
-        })
-        .catch(err => {
-            editCardError.textContent = err.message || 'Ошибка обновления карточки';
-            editCardError.style.display = 'block';
+
+            fetch(`http://localhost:8080/api/v1/card/update/${cardId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    term: { text: term, lang: termLang },
+                    definition: { text: definition, lang: defLang }
+                })
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+                    return;
+                }
+                if (res.status === 400) throw new Error('Неверные данные');
+                if (res.status === 404) throw new Error('Карточка не найдена');
+                if (res.status === 403) throw new Error('Нет прав для редактирования');
+                if (res.status === 500) throw new Error('Ошибка сервера');
+                if (!res.ok) throw new Error('Ошибка обновления карточки');
+                return res.json();
+            })
+            .then(() => {
+                closeEditModal();
+                
+                const card = document.querySelector(`[data-card-id="${cardId}"]`);
+                if (card) {
+                    card.querySelector('.card-title').textContent = term;
+                    card.querySelector('.card-definition').textContent = definition;
+                    card.querySelector('.lang-badge').textContent = termLang.toUpperCase();
+                    card.querySelector('.lang-badge:last-child').textContent = defLang.toUpperCase();
+                }
+                
+                showSuccessMessage('Карточка успешно обновлена');
+            })
+            .catch(err => {
+                editCardError.textContent = err.message || 'Ошибка обновления карточки';
+                editCardError.style.display = 'block';
+            });
         });
-    });
+    }
 });

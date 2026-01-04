@@ -56,3 +56,25 @@ type CategoryModulesRepo interface {
 	DeleteAllModulesFromCategory(categoryId int) error
 	DeleteModuleFromCategories(moduleId int) error
 }
+
+type ResultsRepo interface {
+	GetResultsByOwner(ownerId int) ([]entity.Result, error)
+	GetResultById(id int) (entity.Result, error)
+	GetLastInsertedResultId() (int, error)
+	InsertResult(result entity.Result) error
+	DeleteResultById(id int) error
+}
+
+type ModulesResultsRepo interface {
+	GetResultsToModule(moduleId int) ([]entity.ModuleResult, error)
+	InsertResultToModule(moduleId, resultId int) error
+	DeleteResultsToModule(moduleId int) error
+	DeleteResultToModule(moduleId, resultId int) error
+}
+
+type CategoryModulesResultsRepo interface {
+	GetModulesToCategory(categoryResultsId int) ([]int, error)
+	InsertCategoryModule(categoryId, moduleId int) error
+	DeleteModulesFromCategory(moduleId int) error
+	DeleteAllToCategory(categoryId int)
+}

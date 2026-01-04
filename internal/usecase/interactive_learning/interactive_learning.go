@@ -222,6 +222,29 @@ func (u *UseCase) GetModuleById(moduleId int) (entity.Module, error) {
 	return module, nil
 }
 
+func (u *UseCase) GetModulesByIds(modulesIds []int, isFull bool) ([]entity.Module, error) {
+	modules := []entity.Module{}
+
+	for _, moduleId := range modulesIds {
+		module, err := u.moduleRepo.GetModuleById(moduleId)
+		if err != nil {
+			return []entity.Module{}, err
+		}
+
+		if isFull {
+			cards, err := u.cardRepo.GetCardsByModule(moduleId)
+			if err != nil {
+				return []entity.Module{}, err
+			}
+			module.Cards = cards
+		}
+
+		modules = append(modules, module)
+	}
+
+	return modules, nil
+}
+
 func (u *UseCase) GetModuleOwnerId(moduleId int) (int, error) {
 	return u.moduleRepo.GetModuleOwnerId(moduleId)
 }

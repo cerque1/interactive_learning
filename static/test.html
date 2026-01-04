@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестирование - Заучка</title>
+    <link rel="stylesheet" href="test_style.css">
+</head>
+<body>
+    <header>
+        <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
+        <a id="head" href="/static/main.html" class="header-link">Заучка</a>
+        <div id="username">Загрузка...</div>
+    </header>
+
+    <main>
+        <nav id="nav-panel">
+            <h2>Навигация</h2>
+            <button id="main-btn">Главная</button>
+            <button id="modules-btn">Модули</button>
+            <button id="categories-btn">Категории</button>
+            <button id="results-btn">Результаты</button>
+        </nav>
+        <div id="nav-panel-overlay"></div>
+
+        <section id="test-section">
+            <div class="back-button-container">
+                <button id="backBtn" class="back-btn" style="display:none;">
+                    ← Назад
+                </button>
+            </div>
+
+            <div class="test-header">
+                <h1 id="test-title">Загрузка...</h1>
+                <div class="test-stats">
+                    <span id="total-questions">0</span> вопросов
+                </div>
+                <div id="question-counter" class="question-counter">
+                    <span id="current-question">0</span>/<span id="total-questions-count">0</span>
+                </div>
+            </div>
+
+            <div id="test-area">
+                <div id="question-container">
+                    <div class="question-term" id="question-term"></div>
+                    <div id="answers-container" class="answers-container"></div>
+                </div>
+                
+                <div class="test-controls">
+                    <button id="end-test-btn" class="secondary-btn">Закончить тест</button>
+                    <button id="next-btn" class="primary-btn" style="display:none;">Далее</button>
+                </div>
+            </div>
+
+            <div id="results-screen" class="screen hidden">
+                <div class="results-content">
+                    <h2>Результаты теста</h2>
+                    <div class="results-stats">
+                        <div class="stat">
+                            <span id="results-correct">0</span>
+                            <span>Правильно</span>
+                        </div>
+                        <div class="stat">
+                            <span id="results-incorrect">0</span>
+                            <span>Неправильно</span>
+                        </div>
+                        <div class="stat">
+                            <span id="results-percent">0%</span>
+                            <span>Успешность</span>
+                        </div>
+                    </div>
+                    <div class="results-actions">
+                        <button id="repeat-test-btn" class="btn btn-primary">Повторить тест</button>
+                        <button id="back-from-results-btn" class="btn btn-secondary">Назад</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="test_script.js"></script>
+</body>
+</html>

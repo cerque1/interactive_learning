@@ -3,7 +3,8 @@ let currentCardIndex = 0;
 let isFlipped = false;
 let knownCount = 0;
 let unknownCount = 0;
-let moduleId = null;
+let modulesIds = []; 
+let categoryId = null;
 let moduleData = null;
 let windowMyId = null;
 let isDragging = false;
@@ -78,6 +79,38 @@ function setupNavigation() {
     }
 }
 
+function setupBackButton() {
+    const backBtn = document.getElementById('backToModuleBtn');
+    if (!backBtn) return;
+
+    const params = new URLSearchParams(window.location.search);
+    
+    const categoryIdParam = params.get('category_id');
+    if (categoryIdParam) {
+        categoryId = parseInt(categoryIdParam);
+        backBtn.textContent = '← Назад к категории';
+        backBtn.title = 'Вернуться к категории';
+        backBtn.style.display = 'inline-flex';
+        backBtn.onclick = () => {
+            window.location.href = `/static/category.html?category_id=${categoryId}`;
+        };
+        return;
+    }
+
+    const moduleIdParam = params.get('modules_ids');
+    if (moduleIdParam) {
+        backBtn.textContent = '← Назад к модулю';
+        backBtn.title = 'Вернуться к модулю';
+        backBtn.style.display = 'inline-flex';
+        backBtn.onclick = () => {
+            window.location.href = `/static/module.html?module_id=${moduleIdParam}`;
+        };
+        return;
+    }
+
+    backBtn.style.display = 'none';
+}
+
 function showCard(index) {
     if (index >= cards.length) {
         showResults();
@@ -110,7 +143,6 @@ function showCard(index) {
 
     container.appendChild(card);
 
-    // Принудительное центрирование
     requestAnimationFrame(() => {
         card.style.transform = 'translate(-50%, -50%)';
         setupCardEvents(card);
@@ -234,7 +266,7 @@ function handleSwipe(result) {
 }
 
 function updateProgress() {
-    const progress = ((currentCardIndex / cards.length) * 100);
+    const progress = cards.length > 0 ? ((currentCardIndex / cards.length) * 100) : 0;
     document.getElementById('progress-fill').style.width = `${progress}%`;
     document.getElementById('total-cards').textContent = cards.length;
 }
@@ -252,9 +284,22 @@ function showResults() {
     resultsScreen.classList.remove('hidden');
     
     document.getElementById('repeat-btn').onclick = restartStudy;
-    document.getElementById('back-to-module-btn').onclick = () => {
-        window.location.href = `/static/module.html?module_id=${moduleId}`;
-    };
+    
+    const backToModuleBtn = document.getElementById('back-to-module-btn');
+    if (categoryId) {
+        backToModuleBtn.textContent = 'К категории';
+        backToModuleBtn.onclick = () => {
+            window.location.href = `/static/category.html?category_id=${categoryId}`;
+        };
+    } else {
+        backToModuleBtn.textContent = 'К модулю';
+        const params = new URLSearchParams(window.location.search);
+        const moduleIdParam = params.get('module_id');
+        backToModuleBtn.onclick = () => {
+            window.location.href = moduleIdParam ? 
+                `/static/module.html?module_id=${moduleIdParam}` : '/static/main.html';
+        };
+    }
 }
 
 function restartStudy() {
@@ -272,28 +317,15 @@ function restartStudy() {
     showCard(0);
 }
 
-async function loadModule(token) {
-    const params = new URLSearchParams(window.location.search);
-    moduleId = params.get('module_id');
-    
-    if (!moduleId) {
-        alert('Не указан ID модуля');
-        window.location.href = '/static/modules.html';
-        return;
-    }
-
-    // ✅ ПОКАЗЫВАЕМ КНОПКУ НАЗАД К МОДУЛЮ
-    const backBtn = document.getElementById('backToModuleBtn');
-    if (backBtn) {
-        backBtn.style.display = 'inline-flex';
-        backBtn.addEventListener('click', () => {
-            window.location.href = `/static/module.html?module_id=${moduleId}`;
-        });
-    }
-
+async function loadModulesByIds(token, modulesIds) {
     try {
-        const response = await fetch(`http://localhost:8080/api/v1/module/${moduleId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch('http://localhost:8080/api/v1/module/by_ids?with_cards=t', {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ modules_ids: modulesIds })
         });
 
         if (response.status === 401) {
@@ -302,24 +334,41 @@ async function loadModule(token) {
         }
 
         if (!response.ok) {
-            throw new Error('Не удалось загрузить модуль');
+            throw new Error('Не удалось загрузить модули');
         }
 
-        moduleData = await response.json();
-        document.getElementById('module-title').textContent = moduleData.module.name;
+        const data = await response.json();
+        moduleData = data;
         
-        cards = moduleData.module.cards || [];
+        cards = [];
+        let moduleTitle = '';
+        
+        if (data.modules && data.modules.length > 0) {
+            data.modules.forEach(module => {
+                if (module.cards && module.cards.length > 0) {
+                    cards = cards.concat(module.cards);
+                }
+                if (!moduleTitle) {
+                    moduleTitle = module.name;
+                }
+            });
+        }
         
         if (cards.length === 0) {
-            alert('В модуле нет карточек');
-            window.location.href = `/static/module.html?module_id=${moduleId}`;
+            alert('В выбранных модулях нет карточек');
+            window.location.href = categoryId ? `/static/category.html?category_id=${categoryId}` : '/static/main.html';
             return;
         }
-
+        
+        document.getElementById('module-title').textContent = 
+            modulesIds.length === 1 ? moduleTitle : `${modulesIds.length} модулей`;
+        
         showCard(0);
+        
     } catch (error) {
-        console.error('Ошибка загрузки модуля:', error);
-        alert('Ошибка загрузки модуля');
+        console.error('Ошибка загрузки модулей:', error);
+        alert('Ошибка загрузки модулей');
+        window.location.href = categoryId ? `/static/category.html?category_id=${categoryId}` : '/static/main.html';
     }
 }
 
@@ -332,5 +381,31 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     await loadUserName(token);
     setupNavigation();
-    await loadModule(token);
+    setupBackButton();
+    
+    const params = new URLSearchParams(window.location.search);
+    const modulesIdsParam = params.get('modules_ids');
+    
+    if (modulesIdsParam) {
+        modulesIds = modulesIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+        
+        if (modulesIds.length === 0) {
+            alert('Не указаны корректные ID модулей');
+            window.location.href = categoryId ? `/static/category.html?category_id=${categoryId}` : '/static/main.html';
+            return;
+        }
+        
+        document.getElementById('module-title').textContent = 'Загрузка карточек...';
+        await loadModulesByIds(token, modulesIds);
+    } else {
+        const moduleId = params.get('module_id');
+        if (moduleId) {
+            modulesIds = [parseInt(moduleId)];
+            document.getElementById('module-title').textContent = 'Загрузка модуля...';
+            await loadModulesByIds(token, modulesIds);
+        } else {
+            alert('Не указаны параметры модуля');
+            window.location.href = categoryId ? `/static/category.html?category_id=${categoryId}` : '/static/main.html';
+        }
+    }
 });

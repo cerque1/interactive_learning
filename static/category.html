@@ -25,14 +25,20 @@
   <section>
     <h2 id="category-name">Загрузка...</h2>
     
-    <!-- Кнопка добавления модуля (видна только владельцу категории) -->
-    <button id="add-module-btn" class="primary-btn" style="display:none;">
-      Добавить модуль
-    </button>
-    
-    <button id="edit-category-btn" class="primary-btn" style="display:none;">
-      Редактировать категорию
-    </button>
+    <div class="buttons-container">
+      <button id="add-module-btn" class="primary-btn" style="display:none;">
+        Добавить модуль
+      </button>
+      <button id="study-modules-btn" class="primary-btn" style="display:none;">
+        Выбрать модули для заучивания
+      </button>
+      <button id="test-modules-btn" class="primary-btn" style="display:none;">
+        Выбрать модули для тестирования
+      </button>
+      <button id="edit-category-btn" class="primary-btn" style="display:none;">
+        Редактировать категорию
+      </button>
+    </div>
 
     <div id="modules-container" class="cards-container"></div>
     <div id="empty-message" class="empty-message" style="display:none;">В данной категории нет модулей</div>
@@ -56,6 +62,52 @@
       <button id="confirm-add-modules" class="primary-btn" disabled>
         Добавить выбранные модули
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно выбора модулей для заучивания -->
+<div id="study-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Выбрать модули для заучивания</h3>
+      <button id="close-study-modal" class="close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-buttons">
+        <button id="select-all-btn" class="secondary-btn">Выбрать все</button>
+        <button id="deselect-all-btn" class="secondary-btn">Убрать все</button>
+      </div>
+      <div id="study-modules-container" class="checkbox-container"></div>
+      <div id="no-study-modules-message" class="empty-message" style="display: none;">
+        В категории нет модулей для заучивания
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="start-studying-btn" class="primary-btn" disabled>Начать заучивание</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно выбора модулей для тестирования -->
+<div id="test-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Выбрать модули для тестирования</h3>
+      <button id="close-test-modal" class="close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-buttons">
+        <button id="test-select-all-btn" class="secondary-btn">Выбрать все</button>
+        <button id="test-deselect-all-btn" class="secondary-btn">Убрать все</button>
+      </div>
+      <div id="test-modules-container" class="checkbox-container"></div>
+      <div id="no-test-modules-message" class="empty-message" style="display: none;">
+        В категории нет модулей для тестирования
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="start-testing-btn" class="primary-btn" disabled>Начать тестирование</button>
     </div>
   </div>
 </div>

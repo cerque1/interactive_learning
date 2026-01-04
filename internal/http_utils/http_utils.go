@@ -19,6 +19,10 @@ type RenameReq struct {
 	NewName string `json:"new_name"`
 }
 
+type GetModulesByIdsReq struct {
+	ModulesIds []int `json:"modules_ids"`
+}
+
 func GetModulesCreateReqFromJson(body []byte) (ModuleCreateReq, error) {
 	var mod ModuleCreateReq
 	err := json.Unmarshal(body, &mod)
