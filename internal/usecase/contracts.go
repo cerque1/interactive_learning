@@ -55,3 +55,7 @@ type CategoryModules interface {
 	DeleteAllModulesFromCategory(userId, categoryId int) error
 	DeleteModuleFromCategories(moduleId int) error
 }
+
+type Results interface {
+	// GetResultsByOwner
+}
