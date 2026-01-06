@@ -2,13 +2,17 @@ package entity
 
 import "time"
 
+type CardsResult struct {
+	CardId int    `json:"card_id"`
+	Result string `json:"result"`
+}
+
 type Result struct {
-	Id        int       `json:"result_id"`
-	Owner     int       `json:"owner"`
-	Type      string    `json:"type"`
-	Time      time.Time `json:"time"`
-	Correct   int       `json:"correct"`
-	Incorrect int       `json:"incorrect"`
+	Id       int           `json:"result_id"`
+	Owner    int           `json:"owner"`
+	Type     string        `json:"type"`
+	Time     time.Time     `json:"time"`
+	CardsRes []CardsResult `json:"cards_result,omitempty"`
 }
 
 type ModuleResult struct {

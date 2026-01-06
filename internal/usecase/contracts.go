@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"interactive_learning/internal/entity"
+	httputils "interactive_learning/internal/http_utils"
 	"interactive_learning/internal/utils/tokengenerator"
 )
 
@@ -57,5 +58,17 @@ type CategoryModules interface {
 }
 
 type Results interface {
-	// GetResultsByOwner
+	GetResultsByOwner(userId int) ([]entity.CategoryModulesResult, []entity.ModuleResult, error)
+	GetCardsResultById(resultId int) ([]entity.CardsResult, error)
+	GetResultsToModuleId(moduleId, userId int) ([]entity.ModuleResult, error)
+	GetResultsByCategoryId(categoryId, userId int) ([]entity.CategoryModulesResult, error)
+	GetCategoryResById(categoryResultsId int) (entity.CategoryModulesResult, error)
+	InsertModuleResult(result httputils.InsertModuleResultReq) (int, error)
+	InsertCategoryResult(result httputils.InsertCategoryModulesResultReq) ([]int, error)
+	DeleteModuleResult(resultId int) error
+	DeleteCategoryResultById(categoryResultId int) error
+	DeleteResultByModuleId(moduleId int) error
+	DeleteResultByCategoryId(categoryId int) error
+	DeleteModuleResFromCategories(moduleId int) error
+	DeleteModuleResFromCategory(categoryId, moduleId int) error
 }

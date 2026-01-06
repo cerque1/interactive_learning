@@ -27,9 +27,7 @@ func (rr *ResultsRepo) GetResultsByOwner(ownerId int) ([]entity.Result, error) {
 		err = rows.Scan(&r.Id,
 			&r.Owner,
 			&r.Type,
-			&r.Time,
-			&r.Correct,
-			&r.Incorrect)
+			&r.Time)
 		if err != nil {
 			return []entity.Result{}, err
 		}
@@ -45,9 +43,7 @@ func (rr *ResultsRepo) GetResultById(id int) (entity.Result, error) {
 	err := row.Scan(&r.Id,
 		&r.Owner,
 		&r.Type,
-		&r.Time,
-		&r.Correct,
-		&r.Incorrect)
+		&r.Time)
 	if err != nil {
 		return entity.Result{}, err
 	}
@@ -65,8 +61,8 @@ func (rr *ResultsRepo) GetLastInsertedResultId() (int, error) {
 }
 
 func (rr *ResultsRepo) InsertResult(result entity.Result) error {
-	res, err := rr.db.Exec("INSERT INTO results(owner, type, time, correct, incorrect) "+
-		"VALUES($1, $2, $3, $4, $5)", result.Owner, result.Type, result.Time, result.Correct, result.Incorrect)
+	res, err := rr.db.Exec("INSERT INTO results(owner, type, time) "+
+		"VALUES($1, $2, $3, $4, $5)", result.Owner, result.Type, result.Time)
 	if err != nil {
 		return err
 	}

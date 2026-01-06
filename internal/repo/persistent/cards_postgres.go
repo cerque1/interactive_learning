@@ -114,3 +114,11 @@ func (cr *CardsRepo) DeleteCardsToParentModule(moduleId int) error {
 	}
 	return nil
 }
+
+func (cr *CardsRepo) DeleteCardsToResult(resultId int) error {
+	_, err := cr.db.Exec("DELETE FROM cards WHERE result_id = $1", resultId)
+	if err != nil {
+		return err
+	}
+	return nil
+}

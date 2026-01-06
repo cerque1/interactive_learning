@@ -65,20 +65,34 @@ type ResultsRepo interface {
 	DeleteResultById(id int) error
 }
 
+type CardsResultsRepo interface {
+	GetCardsResultById(resultId int) ([]entity.CardsResult, error)
+	InsertCardResult(resultId, cardId int, result string) error
+	DeleteCardResult(resultId, cardId int) error
+	DeleteCardsToResult(resultId int) error
+	DeleteResultsToCard(cardId int) error
+}
+
 type ModulesResultsRepo interface {
 	GetModulesResByOwner(ownerId int) ([]entity.ModuleResult, error)
+	GetResultsToModuleOwner(moduleId, ownerId int) ([]entity.ModuleResult, error)
 	GetResultsToModule(moduleId int) ([]entity.ModuleResult, error)
 	InsertResultToModule(moduleId, resultId int) error
 	DeleteResultsToModule(moduleId int) error
-	DeleteResultToModule(moduleId, resultId int) error
+	DeleteResultToModule(resultId int) error
 }
 
 type CategoryModulesResultsRepo interface {
 	GetCategoriesResByOwner(ownerId int) ([]entity.CategoryModulesResult, error)
 	GetCategoryResById(categoryResultsId int) (entity.CategoryModulesResult, error)
+	GetResultsByCategoryOwner(categoryId, ownerId int) ([]entity.CategoryModulesResult, error)
 	GetResultsByCategoryId(categoryId int) ([]entity.CategoryModulesResult, error)
+	GetResultsByCategoryAndModule(categoryId, moduleId int) ([]int, error)
 	GetLastInsertedResId() (int, error)
-	InsertCategoryModule(categoryResultId, categoryId, moduleId int) error
-	DeleteModulesFromCategory(moduleId int) error
+	GetResultsByModuleId(moduleId int) ([]int, error)
+	InsertCategoryModule(categoryResultId, categoryId, moduleId, result_id int) error
+	DeleteModulesFromCategories(moduleId int) error
+	DeleteModulesFromCategory(categoryId, moduleId int) error
 	DeleteAllToCategory(categoryId int) error
+	DeleteResultById(categoryResultId int) error
 }

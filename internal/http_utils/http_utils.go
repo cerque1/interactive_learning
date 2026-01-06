@@ -23,6 +23,23 @@ type GetModulesByIdsReq struct {
 	ModulesIds []int `json:"modules_ids"`
 }
 
+type ResultForReq struct {
+	Owner    int                  `json:"owner"`
+	Type     string               `json:"type"`
+	Time     string               `json:"time"`
+	CardsRes []entity.CardsResult `json:"cards_result,omitempty"`
+}
+
+type InsertModuleResultReq struct {
+	ModuleId int          `json:"module_id"`
+	Result   ResultForReq `json:"result,inline"`
+}
+
+type InsertCategoryModulesResultReq struct {
+	CategoryId int                     `json:"category_id"`
+	Modules    []InsertModuleResultReq `json:"modules_res"`
+}
+
 func GetModulesCreateReqFromJson(body []byte) (ModuleCreateReq, error) {
 	var mod ModuleCreateReq
 	err := json.Unmarshal(body, &mod)

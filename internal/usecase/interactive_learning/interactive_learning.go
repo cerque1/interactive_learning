@@ -3,26 +3,36 @@ package interactivelearning
 import (
 	"errors"
 	"interactive_learning/internal/entity"
+	httputils "interactive_learning/internal/http_utils"
 	"interactive_learning/internal/repo"
 	"interactive_learning/internal/repo/persistent"
 	"interactive_learning/internal/utils/tokengenerator"
 	"slices"
 	"sync"
+	"time"
 )
 
 type UseCase struct {
-	userRepo            repo.UsersRepo
-	tokenStorage        repo.TokenStorage
-	cardRepo            repo.CardRepo
-	moduleRepo          repo.ModuleRepo
-	categoryRepo        repo.CategoryRepo
-	categoryModulesRepo repo.CategoryModulesRepo
+	userRepo                   repo.UsersRepo
+	tokenStorage               repo.TokenStorage
+	cardRepo                   repo.CardRepo
+	moduleRepo                 repo.ModuleRepo
+	categoryRepo               repo.CategoryRepo
+	categoryModulesRepo        repo.CategoryModulesRepo
+	resultRepo                 repo.ResultsRepo
+	cardsResultsRepo           repo.CardsResultsRepo
+	modulesResultsRepo         repo.ModulesResultsRepo
+	categoryModulesResultsRepo repo.CategoryModulesResultsRepo
 
-	usersMutex           sync.Mutex
-	cardMutex            sync.Mutex
-	moduleMutex          sync.Mutex
-	categoryMutex        sync.Mutex
-	categoryModulesMutex sync.Mutex
+	usersMutex                  sync.Mutex
+	cardMutex                   sync.Mutex
+	moduleMutex                 sync.Mutex
+	categoryMutex               sync.Mutex
+	categoryModulesMutex        sync.Mutex
+	resultsMutex                sync.Mutex
+	cardsResultsMutex           sync.Mutex
+	modulesResultsMutex         sync.Mutex
+	categoryModulesResultsMutex sync.Mutex
 }
 
 func New(userRepo repo.UsersRepo, cardRepo repo.CardRepo, moduleRepo repo.ModuleRepo, categoryRepo repo.CategoryRepo, categoryModulesRepo repo.CategoryModulesRepo) *UseCase {
@@ -178,10 +188,33 @@ func (u *UseCase) DeleteCard(userId int, cardId int) error {
 		return errors.New("unaccessable card")
 	}
 
+	u.cardsResultsMutex.Lock()
+	defer u.cardsResultsMutex.Unlock()
+
+	err = u.cardsResultsRepo.DeleteResultsToCard(cardId)
+	if err != nil {
+		return err
+	}
+
 	return u.cardRepo.DeleteCard(cardId)
 }
 
 func (u *UseCase) DeleteCardsToParentModule(moduleId int) error {
+	module, err := u.GetModuleById(moduleId)
+	if err != nil {
+		return err
+	}
+
+	u.cardsResultsMutex.Lock()
+	defer u.cardsResultsMutex.Unlock()
+
+	for _, card := range module.Cards {
+		err = u.cardsResultsRepo.DeleteResultsToCard(card.Id)
+		if err != nil {
+			return err
+		}
+	}
+
 	u.cardMutex.Lock()
 	defer u.cardMutex.Unlock()
 
@@ -304,6 +337,17 @@ func (u *UseCase) DeleteModule(userId int, moduleId int) error {
 	if err != nil {
 		return err
 	}
+
+	err = u.DeleteResultByModuleId(moduleId)
+	if err != nil {
+		return err
+	}
+
+	err = u.DeleteModuleResFromCategories(moduleId)
+	if err != nil {
+		return err
+	}
+
 	return u.moduleRepo.DeleteModule(moduleId)
 }
 
@@ -401,6 +445,12 @@ func (u *UseCase) DeleteCategory(userId int, id int) error {
 	if err != nil {
 		return err
 	}
+
+	err = u.DeleteResultByCategoryId(id)
+	if err != nil {
+		return err
+	}
+
 	return u.categoryRepo.DeleteCategory(id)
 }
 
@@ -464,6 +514,10 @@ func (u *UseCase) DeleteModuleFromCategory(userId, categoryId, moduleId int) err
 		return errors.New("unavailable category")
 	}
 
+	err = u.DeleteModuleResFromCategory(categoryId, moduleId)
+	if err != nil {
+		return err
+	}
 	return u.categoryModulesRepo.DeleteModuleFromCategory(categoryId, moduleId)
 }
 
@@ -488,16 +542,308 @@ func (u *UseCase) DeleteModuleFromCategories(moduleId int) error {
 	return u.categoryModulesRepo.DeleteModuleFromCategories(moduleId)
 }
 
-// func (u *UseCase) DeleteModulesFromCategory(categoryId int, modulesIds []int) error {
-// 	u.categoryModulesMutex.Lock()
-// 	defer u.categoryModulesMutex.Unlock()
+func (u *UseCase) GetResultsByOwner(userId int) ([]entity.CategoryModulesResult, []entity.ModuleResult, error) {
+	categoriesRes, err := u.categoryModulesResultsRepo.GetCategoriesResByOwner(userId)
+	if err != nil {
+		return []entity.CategoryModulesResult{}, []entity.ModuleResult{}, err
+	}
 
-// 	for moduleId, _ := range modulesIds {
-// 		err := u.DeleteModuleFromCategory(categoryId, moduleId)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
+	modulesRes, err := u.modulesResultsRepo.GetModulesResByOwner(userId)
+	if err != nil {
+		return []entity.CategoryModulesResult{}, []entity.ModuleResult{}, err
+	}
 
-// 	return nil
-// }
+	return categoriesRes, modulesRes, nil
+}
+
+func (u *UseCase) GetCardsResultById(resultId int) ([]entity.CardsResult, error) {
+	return u.cardsResultsRepo.GetCardsResultById(resultId)
+}
+
+func (u *UseCase) GetResultsToModuleId(moduleId, userId int) ([]entity.ModuleResult, error) {
+	return u.modulesResultsRepo.GetResultsToModuleOwner(moduleId, userId)
+}
+
+func (u *UseCase) GetResultsByCategoryId(categoryId, userId int) ([]entity.CategoryModulesResult, error) {
+	return u.categoryModulesResultsRepo.GetResultsByCategoryOwner(categoryId, userId)
+}
+
+func (u *UseCase) GetCategoryResById(categoryResultsId int) (entity.CategoryModulesResult, error) {
+	return u.categoryModulesResultsRepo.GetCategoryResById(categoryResultsId)
+}
+
+func (u *UseCase) InsertModuleResult(result httputils.InsertModuleResultReq) (int, error) {
+	u.resultsMutex.Lock()
+	defer u.resultsMutex.Unlock()
+
+	time, err := time.Parse(time.RFC3339, result.Result.Time)
+	if err != nil {
+		return -1, err
+	}
+
+	err = u.resultRepo.InsertResult(entity.Result{Owner: result.Result.Owner,
+		Type: result.Result.Type,
+		Time: time})
+	if err != nil {
+		return -1, err
+	}
+
+	insertedResId, err := u.resultRepo.GetLastInsertedResultId()
+	if err != nil {
+		return -1, err
+	}
+
+	u.cardsResultsMutex.Lock()
+	defer u.cardsResultsMutex.Unlock()
+
+	for _, cardRes := range result.Result.CardsRes {
+		err = u.cardsResultsRepo.InsertCardResult(insertedResId, cardRes.CardId, cardRes.Result)
+		if err != nil {
+			return -1, err
+		}
+	}
+
+	u.modulesResultsMutex.Lock()
+	defer u.modulesResultsMutex.Unlock()
+
+	err = u.modulesResultsRepo.InsertResultToModule(result.ModuleId, insertedResId)
+	if err != nil {
+		return -1, err
+	}
+	return insertedResId, nil
+}
+
+func (u *UseCase) InsertCategoryResult(result httputils.InsertCategoryModulesResultReq) ([]int, error) {
+	insertedResIds := []int{}
+	for _, modulesRes := range result.Modules {
+		u.resultsMutex.Lock()
+		defer u.resultsMutex.Unlock()
+
+		time, err := time.Parse(time.RFC3339, modulesRes.Result.Time)
+		if err != nil {
+			return []int{}, err
+		}
+
+		err = u.resultRepo.InsertResult(entity.Result{Owner: modulesRes.Result.Owner,
+			Type: modulesRes.Result.Type,
+			Time: time})
+		if err != nil {
+			return []int{}, err
+		}
+
+		insertedResId, err := u.resultRepo.GetLastInsertedResultId()
+		if err != nil {
+			return []int{}, err
+		}
+
+		u.cardsResultsMutex.Lock()
+		defer u.cardsResultsMutex.Unlock()
+
+		for _, cardRes := range modulesRes.Result.CardsRes {
+			err = u.cardsResultsRepo.InsertCardResult(insertedResId, cardRes.CardId, cardRes.Result)
+			if err != nil {
+				return []int{}, err
+			}
+		}
+		insertedResIds = append(insertedResIds, insertedResId)
+
+		u.categoryModulesResultsMutex.Lock()
+		defer u.categoryModulesResultsMutex.Unlock()
+
+		lastInsertedResId, err := u.categoryModulesResultsRepo.GetLastInsertedResId()
+		if err != nil {
+			return []int{}, err
+		}
+
+		err = u.categoryModulesResultsRepo.InsertCategoryModule(lastInsertedResId+1, result.CategoryId, modulesRes.ModuleId, insertedResId)
+		if err != nil {
+			return []int{}, err
+		}
+	}
+	return insertedResIds, nil
+}
+
+func (u *UseCase) DeleteModuleResult(resultId int) error {
+	u.cardsResultsMutex.Lock()
+	defer u.cardsResultsMutex.Unlock()
+
+	err := u.cardsResultsRepo.DeleteCardsToResult(resultId)
+	if err != nil {
+		return err
+	}
+
+	u.modulesResultsMutex.Lock()
+	defer u.modulesResultsMutex.Unlock()
+
+	err = u.modulesResultsRepo.DeleteResultToModule(resultId)
+	if err != nil {
+		return err
+	}
+
+	u.resultsMutex.Lock()
+	defer u.resultsMutex.Unlock()
+
+	return u.resultRepo.DeleteResultById(resultId)
+}
+
+func (u *UseCase) DeleteCategoryResultById(categoryResultId int) error {
+	categoryRes, err := u.categoryModulesResultsRepo.GetCategoryResById(categoryResultId)
+	if err != nil {
+		return err
+	}
+
+	u.categoryModulesResultsMutex.Lock()
+	defer u.categoryModulesResultsMutex.Unlock()
+
+	err = u.categoryModulesResultsRepo.DeleteResultById(categoryResultId)
+	if err != nil {
+		return err
+	}
+
+	u.cardsResultsMutex.Lock()
+	defer u.cardsResultsMutex.Unlock()
+
+	u.resultsMutex.Lock()
+	defer u.resultsMutex.Unlock()
+
+	for _, moduleRes := range categoryRes.Modules {
+		err = u.cardsResultsRepo.DeleteCardsToResult(moduleRes.Result.Id)
+		if err != nil {
+			return err
+		}
+
+		err = u.resultRepo.DeleteResultById(moduleRes.Result.Id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *UseCase) DeleteResultByModuleId(moduleId int) error {
+	modulesRes, err := u.modulesResultsRepo.GetResultsToModule(moduleId)
+	if err != nil {
+		return err
+	}
+
+	u.cardsResultsMutex.Lock()
+	defer u.cardsResultsMutex.Unlock()
+
+	u.modulesResultsMutex.Lock()
+	defer u.modulesResultsMutex.Unlock()
+
+	u.resultsMutex.Lock()
+	defer u.resultsMutex.Unlock()
+
+	for _, moduleRes := range modulesRes {
+		err := u.cardsResultsRepo.DeleteCardsToResult(moduleRes.Result.Id)
+		if err != nil {
+			return err
+		}
+
+		err = u.modulesResultsRepo.DeleteResultToModule(moduleRes.Result.Id)
+		if err != nil {
+			return err
+		}
+
+		err = u.resultRepo.DeleteResultById(moduleRes.Result.Id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *UseCase) DeleteResultByCategoryId(categoryId int) error {
+	categoryRes, err := u.categoryModulesResultsRepo.GetCategoryResById(categoryId)
+	if err != nil {
+		return err
+	}
+
+	u.categoryModulesResultsMutex.Lock()
+	defer u.categoryModulesResultsMutex.Unlock()
+
+	err = u.categoryModulesResultsRepo.DeleteAllToCategory(categoryId)
+	if err != nil {
+		return err
+	}
+
+	u.cardsResultsMutex.Lock()
+	defer u.cardsResultsMutex.Unlock()
+
+	u.resultsMutex.Lock()
+	defer u.resultsMutex.Unlock()
+
+	for _, moduleRes := range categoryRes.Modules {
+		err = u.cardsResultsRepo.DeleteCardsToResult(moduleRes.Result.Id)
+		if err != nil {
+			return err
+		}
+
+		err = u.resultRepo.DeleteResultById(moduleRes.Result.Id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *UseCase) DeleteModuleResFromCategories(moduleId int) error {
+	resultsIds, err := u.categoryModulesResultsRepo.GetResultsByModuleId(moduleId)
+	if err != nil {
+		return err
+	}
+
+	u.cardsResultsMutex.Lock()
+	defer u.cardsResultsMutex.Unlock()
+
+	u.resultsMutex.Lock()
+	defer u.resultsMutex.Unlock()
+
+	for _, resultId := range resultsIds {
+		err := u.cardsResultsRepo.DeleteCardsToResult(resultId)
+		if err != nil {
+			return err
+		}
+
+		err = u.resultRepo.DeleteResultById(resultId)
+		if err != nil {
+			return err
+		}
+	}
+
+	u.categoryModulesResultsMutex.Lock()
+	defer u.categoryModulesResultsMutex.Unlock()
+
+	return u.categoryModulesResultsRepo.DeleteModulesFromCategories(moduleId)
+}
+
+func (u *UseCase) DeleteModuleResFromCategory(categoryId, moduleId int) error {
+	resultsIds, err := u.categoryModulesResultsRepo.GetResultsByCategoryAndModule(categoryId, moduleId)
+	if err != nil {
+		return err
+	}
+
+	u.cardsResultsMutex.Lock()
+	defer u.cardsResultsMutex.Unlock()
+
+	u.resultsMutex.Lock()
+	defer u.resultsMutex.Unlock()
+
+	for _, resultId := range resultsIds {
+		err := u.cardsResultsRepo.DeleteCardsToResult(resultId)
+		if err != nil {
+			return err
+		}
+
+		err = u.resultRepo.DeleteResultById(resultId)
+		if err != nil {
+			return err
+		}
+	}
+
+	u.categoryModulesResultsMutex.Lock()
+	defer u.categoryModulesResultsMutex.Unlock()
+
+	return u.categoryModulesResultsRepo.DeleteModulesFromCategory(categoryId, moduleId)
+}

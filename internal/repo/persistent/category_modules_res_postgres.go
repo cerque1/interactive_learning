@@ -37,9 +37,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]e
 			&moduleRes.Result.Id,
 			&moduleRes.Result.Owner,
 			&moduleRes.Result.Type,
-			&timeStr,
-			&moduleRes.Result.Correct,
-			&moduleRes.Result.Incorrect)
+			&timeStr)
 		if err != nil {
 			return []entity.CategoryModulesResult{}, err
 		}
@@ -91,9 +89,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoryResById(categoryResultsId int)
 			&moduleRes.Result.Id,
 			&moduleRes.Result.Owner,
 			&moduleRes.Result.Type,
-			&timeStr,
-			&moduleRes.Result.Correct,
-			&moduleRes.Result.Incorrect)
+			&timeStr)
 		if err != nil {
 			return entity.CategoryModulesResult{}, err
 		}
@@ -114,10 +110,64 @@ func (cmr *CategoryModulesResultsRepo) GetCategoryResById(categoryResultsId int)
 	return categoryRes, nil
 }
 
+func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryOwner(categoryId, userId int) ([]entity.CategoryModulesResult, error) {
+	rows, err := cmr.db.Query("SELECT category_res.category_result_id, category_res.module_id, results.* "+
+		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
+		"WHERE category_id = $1 AND results.owner = $2 "+
+		"ORDER BY category_res.category_result_id", categoryId, userId)
+	if err != nil {
+		return []entity.CategoryModulesResult{}, err
+	}
+
+	categoryRes := map[int]entity.CategoryModulesResult{}
+	first := true
+	var tempResId int
+	var timeStr string
+	oneCategoryRes := entity.CategoryModulesResult{CategoryId: categoryId}
+	for rows.Next() {
+		moduleRes := entity.ModuleResult{}
+		err = rows.Scan(&tempResId,
+			&moduleRes.ModuleId,
+			&moduleRes.Result.Id,
+			&moduleRes.Result.Owner,
+			&moduleRes.Result.Type,
+			&timeStr)
+		if err != nil {
+			return []entity.CategoryModulesResult{}, err
+		}
+
+		if first {
+			oneCategoryRes.CategoryResultId = tempResId
+			first = false
+		}
+
+		if oneCategoryRes.CategoryId != tempResId {
+			categoryRes[oneCategoryRes.CategoryId] = oneCategoryRes
+			oneCategoryRes = entity.CategoryModulesResult{CategoryId: categoryId, CategoryResultId: tempResId}
+		}
+
+		parseTime, err := time.Parse(time.RFC3339, timeStr)
+		if err != nil {
+			return []entity.CategoryModulesResult{}, err
+		}
+		moduleRes.Result.Time = parseTime
+
+		oneCategoryRes.Modules = append(oneCategoryRes.Modules, moduleRes)
+	}
+	categoryRes[oneCategoryRes.CategoryId] = oneCategoryRes
+
+	categoryResArray := []entity.CategoryModulesResult{}
+	for _, value := range categoryRes {
+		categoryResArray = append(categoryResArray, value)
+	}
+
+	return categoryResArray, nil
+}
+
 func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryId(categoryId int) ([]entity.CategoryModulesResult, error) {
 	rows, err := cmr.db.Query("SELECT category_res.category_result_id, category_res.module_id, results.* "+
 		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
-		"WHERE category_id = $1"+
+		"WHERE category_id = $1 "+
 		"ORDER BY category_res.category_result_id", categoryId)
 	if err != nil {
 		return []entity.CategoryModulesResult{}, err
@@ -135,9 +185,7 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryId(categoryId int) ([
 			&moduleRes.Result.Id,
 			&moduleRes.Result.Owner,
 			&moduleRes.Result.Type,
-			&timeStr,
-			&moduleRes.Result.Correct,
-			&moduleRes.Result.Incorrect)
+			&timeStr)
 		if err != nil {
 			return []entity.CategoryModulesResult{}, err
 		}
@@ -180,9 +228,45 @@ func (cmr *CategoryModulesResultsRepo) GetLastInsertedResId() (int, error) {
 	return id, nil
 }
 
-func (cmr *CategoryModulesResultsRepo) InsertCategoryModule(categoryResultId, categoryId, moduleId int) error {
-	res, err := cmr.db.Exec("INSERT INTO category_res(category_result_id, category_id, module_id) "+
-		"VALUES($1, $2)", categoryResultId, categoryId, moduleId)
+func (cmr *CategoryModulesResultsRepo) GetResultsByModuleId(moduleId int) ([]int, error) {
+	rows, err := cmr.db.Query("SELECT result_id FROM category_res WHERE module_id = $1", moduleId)
+	if err != nil {
+		return []int{}, err
+	}
+
+	ids := []int{}
+	for rows.Next() {
+		var id int
+		if err = rows.Scan(&id); err != nil {
+			return []int{}, err
+		}
+
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
+func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryAndModule(categoryId, moduleId int) ([]int, error) {
+	rows, err := cmr.db.Query("SELECT result_id FROM category_res WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
+	if err != nil {
+		return []int{}, err
+	}
+
+	ids := []int{}
+	for rows.Next() {
+		var id int
+		if err = rows.Scan(&id); err != nil {
+			return []int{}, err
+		}
+
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
+func (cmr *CategoryModulesResultsRepo) InsertCategoryModule(categoryResultId, categoryId, moduleId, result_id int) error {
+	res, err := cmr.db.Exec("INSERT INTO category_res(category_result_id, category_id, module_id, result_id) "+
+		"VALUES($1, $2)", categoryResultId, categoryId, moduleId, result_id)
 	if err != nil {
 		return err
 	}
@@ -192,8 +276,16 @@ func (cmr *CategoryModulesResultsRepo) InsertCategoryModule(categoryResultId, ca
 	return nil
 }
 
-func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategory(moduleId int) error {
+func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategories(moduleId int) error {
 	_, err := cmr.db.Exec("DELETE FROM category_res WHERE module_id = $1", moduleId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategory(categoryId, moduleId int) error {
+	_, err := cmr.db.Exec("DELETE FROM category_res WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
 	if err != nil {
 		return err
 	}
@@ -202,6 +294,14 @@ func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategory(moduleId int) e
 
 func (cmr *CategoryModulesResultsRepo) DeleteAllToCategory(categoryId int) error {
 	_, err := cmr.db.Exec("DELETE FROM category_res WHERE category_id = $1", categoryId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cmr *CategoryModulesResultsRepo) DeleteResultById(categoryResultId int) error {
+	_, err := cmr.db.Exec("DELETE FROM category_res WHERE category_result_id = $1", categoryResultId)
 	if err != nil {
 		return err
 	}

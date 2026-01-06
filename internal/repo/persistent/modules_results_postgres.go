@@ -29,9 +29,32 @@ func (mrr *ModulesResultsRepo) GetModulesResByOwner(ownerId int) ([]entity.Modul
 			&mr.Result.Id,
 			&mr.Result.Owner,
 			&mr.Result.Type,
-			&mr.Result.Time,
-			&mr.Result.Correct,
-			&mr.Result.Incorrect)
+			&mr.Result.Time)
+		if err != nil {
+			return []entity.ModuleResult{}, err
+		}
+		modules_results = append(modules_results, mr)
+	}
+
+	return modules_results, err
+}
+
+func (mrr *ModulesResultsRepo) GetResultsToModuleOwner(moduleId, ownerId int) ([]entity.ModuleResult, error) {
+	rows, err := mrr.db.Query("SELECT modules_res.module_id, results.id, results.\"owner\", results.\"type\", results.\"time\", results.correct, results.incorrect "+
+		"FROM modules_res INNER JOIN results ON modules_res.result_id = results.id "+
+		"WHERE modules_res.module_id = $1 AND results.owner = $2", moduleId, ownerId)
+	if err != nil {
+		return []entity.ModuleResult{}, err
+	}
+
+	modules_results := []entity.ModuleResult{}
+	for rows.Next() {
+		mr := entity.ModuleResult{}
+		err := rows.Scan(&mr.ModuleId,
+			&mr.Result.Id,
+			&mr.Result.Owner,
+			&mr.Result.Type,
+			&mr.Result.Time)
 		if err != nil {
 			return []entity.ModuleResult{}, err
 		}
@@ -56,9 +79,7 @@ func (mrr *ModulesResultsRepo) GetResultsToModule(moduleId int) ([]entity.Module
 			&mr.Result.Id,
 			&mr.Result.Owner,
 			&mr.Result.Type,
-			&mr.Result.Time,
-			&mr.Result.Correct,
-			&mr.Result.Incorrect)
+			&mr.Result.Time)
 		if err != nil {
 			return []entity.ModuleResult{}, err
 		}
@@ -88,8 +109,8 @@ func (mrr *ModulesResultsRepo) DeleteResultsToModule(moduleId int) error {
 	return nil
 }
 
-func (mrr *ModulesResultsRepo) DeleteResultToModule(moduleId, resultId int) error {
-	_, err := mrr.db.Exec("DELETE FROM modules_res WHERE module_id = $1 AND result_id = $2", moduleId, resultId)
+func (mrr *ModulesResultsRepo) DeleteResultToModule(resultId int) error {
+	_, err := mrr.db.Exec("DELETE FROM modules_res WHERE result_id = $2", resultId)
 	if err != nil {
 		return err
 	}
