@@ -1,21 +1,21 @@
 package persistent
 
 import (
-	"database/sql"
 	"errors"
 	"interactive_learning/internal/entity"
+	"interactive_learning/internal/repo"
 )
 
 type CategoryModulesRepo struct {
-	db *sql.DB
+	psql repo.PSQL
 }
 
-func NewCategoryModulesRepo(db *sql.DB) *CategoryModulesRepo {
-	return &CategoryModulesRepo{db: db}
+func NewCategoryModulesRepo(psql repo.PSQL) *CategoryModulesRepo {
+	return &CategoryModulesRepo{psql: psql}
 }
 
 func (cmr *CategoryModulesRepo) GetModulesToCategory(categoryId int) ([]entity.Module, error) {
-	rows, err := cmr.db.Query("SELECT id, name, owner_id, type FROM category_modules LEFT JOIN modules ON modules.id = category_modules.module_id "+
+	rows, err := cmr.psql.Query("SELECT id, name, owner_id, type FROM category_modules LEFT JOIN modules ON modules.id = category_modules.module_id "+
 		"WHERE category_id = $1", categoryId)
 	if err != nil {
 		return []entity.Module{}, err
@@ -35,7 +35,7 @@ func (cmr *CategoryModulesRepo) GetModulesToCategory(categoryId int) ([]entity.M
 }
 
 func (cmr *CategoryModulesRepo) InsertModulesToCategory(categoryId, moduleId int) error {
-	result, err := cmr.db.Exec("INSERT INTO category_modules(category_id, module_id) "+
+	result, err := cmr.psql.Exec("INSERT INTO category_modules(category_id, module_id) "+
 		"VALUES($1, $2)", categoryId, moduleId)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (cmr *CategoryModulesRepo) InsertModulesToCategory(categoryId, moduleId int
 }
 
 func (cmr *CategoryModulesRepo) DeleteModuleFromCategory(categoryId, moduleId int) error {
-	_, err := cmr.db.Exec("DELETE FROM category_modules "+
+	_, err := cmr.psql.Exec("DELETE FROM category_modules "+
 		"WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (cmr *CategoryModulesRepo) DeleteModuleFromCategory(categoryId, moduleId in
 }
 
 func (cmr *CategoryModulesRepo) DeleteAllModulesFromCategory(categoryId int) error {
-	_, err := cmr.db.Exec("DELETE FROM category_modules "+
+	_, err := cmr.psql.Exec("DELETE FROM category_modules "+
 		"WHERE category_id = $1", categoryId)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (cmr *CategoryModulesRepo) DeleteAllModulesFromCategory(categoryId int) err
 }
 
 func (cmr *CategoryModulesRepo) DeleteModuleFromCategories(moduleId int) error {
-	_, err := cmr.db.Exec("DELETE FROM category_modules "+
+	_, err := cmr.psql.Exec("DELETE FROM category_modules "+
 		"WHERE module_id = $1", moduleId)
 	if err != nil {
 		return err

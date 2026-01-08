@@ -1,21 +1,21 @@
 package persistent
 
 import (
-	"database/sql"
 	"errors"
 	"interactive_learning/internal/entity"
+	"interactive_learning/internal/repo"
 )
 
 type ModulesRepo struct {
-	db *sql.DB
+	psql repo.PSQL
 }
 
-func NewModulesRepo(db *sql.DB) *ModulesRepo {
-	return &ModulesRepo{db: db}
+func NewModulesRepo(psql repo.PSQL) *ModulesRepo {
+	return &ModulesRepo{psql: psql}
 }
 
 func (mr *ModulesRepo) GetModulesByUser(userId int) ([]entity.Module, error) {
-	rows, err := mr.db.Query("SELECT * FROM modules WHERE owner_id = $1", userId)
+	rows, err := mr.psql.Query("SELECT * FROM modules WHERE owner_id = $1", userId)
 	if err != nil {
 		return []entity.Module{}, err
 	}
@@ -33,7 +33,7 @@ func (mr *ModulesRepo) GetModulesByUser(userId int) ([]entity.Module, error) {
 }
 
 func (cr *ModulesRepo) GetModuleById(moduleId int) (entity.Module, error) {
-	row := cr.db.QueryRow("SELECT * FROM modules WHERE id = $1", moduleId)
+	row := cr.psql.QueryRow("SELECT * FROM modules WHERE id = $1", moduleId)
 	m := entity.Module{}
 	err := row.Scan(&m.Id, &m.Name, &m.OwnerId, &m.Type)
 	if err != nil {
@@ -43,7 +43,7 @@ func (cr *ModulesRepo) GetModuleById(moduleId int) (entity.Module, error) {
 }
 
 func (mr *ModulesRepo) GetLastInsertedModuleId() (int, error) {
-	row := mr.db.QueryRow("SELECT MAX(id) FROM modules")
+	row := mr.psql.QueryRow("SELECT MAX(id) FROM modules")
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
@@ -53,7 +53,7 @@ func (mr *ModulesRepo) GetLastInsertedModuleId() (int, error) {
 }
 
 func (mr *ModulesRepo) GetModuleOwnerId(moduleId int) (int, error) {
-	row := mr.db.QueryRow("SELECT owner_id FROM modules WHERE id = $1", moduleId)
+	row := mr.psql.QueryRow("SELECT owner_id FROM modules WHERE id = $1", moduleId)
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
@@ -63,7 +63,7 @@ func (mr *ModulesRepo) GetModuleOwnerId(moduleId int) (int, error) {
 }
 
 func (mr *ModulesRepo) InsertModule(module entity.ModuleToCreate) error {
-	result, err := mr.db.Exec("INSERT INTO modules(name, owner_id, type) "+
+	result, err := mr.psql.Exec("INSERT INTO modules(name, owner_id, type) "+
 		"VALUES($1, $2, $3)", module.Name, module.OwnerId, module.Type)
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (mr *ModulesRepo) InsertModule(module entity.ModuleToCreate) error {
 }
 
 func (mr *ModulesRepo) RenameModule(moduleId int, newName string) error {
-	result, err := mr.db.Exec("UPDATE modules "+
+	result, err := mr.psql.Exec("UPDATE modules "+
 		"SET name = $1 "+
 		"WHERE id = $2", newName, moduleId)
 	if err != nil {
@@ -87,7 +87,7 @@ func (mr *ModulesRepo) RenameModule(moduleId int, newName string) error {
 }
 
 func (mr *ModulesRepo) DeleteModule(moduleId int) error {
-	_, err := mr.db.Exec("DELETE FROM modules WHERE id = $1", moduleId)
+	_, err := mr.psql.Exec("DELETE FROM modules WHERE id = $1", moduleId)
 	if err != nil {
 		return err
 	}

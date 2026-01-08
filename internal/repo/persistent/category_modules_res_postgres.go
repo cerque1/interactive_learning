@@ -1,22 +1,22 @@
 package persistent
 
 import (
-	"database/sql"
 	"errors"
 	"interactive_learning/internal/entity"
+	"interactive_learning/internal/repo"
 	"time"
 )
 
 type CategoryModulesResultsRepo struct {
-	db *sql.DB
+	psql repo.PSQL
 }
 
-func NewCategoryModulesResultsRepo(db *sql.DB) *CategoryModulesResultsRepo {
-	return &CategoryModulesResultsRepo{db: db}
+func NewCategoryModulesResultsRepo(psql repo.PSQL) *CategoryModulesResultsRepo {
+	return &CategoryModulesResultsRepo{psql: psql}
 }
 
 func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]entity.CategoryModulesResult, error) {
-	rows, err := cmr.db.Query("SELECT category_res.category_result_id, category_res.category_id, category_res.module_id, results.* "+
+	rows, err := cmr.psql.Query("SELECT category_res.category_result_id, category_res.category_id, category_res.module_id, results.* "+
 		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
 		"WHERE results.\"owner\" = $1 "+
 		"ORDER BY category_res.category_result_id", ownerId)
@@ -71,7 +71,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]e
 }
 
 func (cmr *CategoryModulesResultsRepo) GetCategoryResById(categoryResultsId int) (entity.CategoryModulesResult, error) {
-	rows, err := cmr.db.Query("SELECT category_res.category_id, category_res.module_id, results.* "+
+	rows, err := cmr.psql.Query("SELECT category_res.category_id, category_res.module_id, results.* "+
 		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
 		"WHERE category_result_id = $1", categoryResultsId)
 	if err != nil {
@@ -111,7 +111,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoryResById(categoryResultsId int)
 }
 
 func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryOwner(categoryId, userId int) ([]entity.CategoryModulesResult, error) {
-	rows, err := cmr.db.Query("SELECT category_res.category_result_id, category_res.module_id, results.* "+
+	rows, err := cmr.psql.Query("SELECT category_res.category_result_id, category_res.module_id, results.* "+
 		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
 		"WHERE category_id = $1 AND results.owner = $2 "+
 		"ORDER BY category_res.category_result_id", categoryId, userId)
@@ -165,7 +165,7 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryOwner(categoryId, use
 }
 
 func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryId(categoryId int) ([]entity.CategoryModulesResult, error) {
-	rows, err := cmr.db.Query("SELECT category_res.category_result_id, category_res.module_id, results.* "+
+	rows, err := cmr.psql.Query("SELECT category_res.category_result_id, category_res.module_id, results.* "+
 		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
 		"WHERE category_id = $1 "+
 		"ORDER BY category_res.category_result_id", categoryId)
@@ -219,7 +219,7 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryId(categoryId int) ([
 }
 
 func (cmr *CategoryModulesResultsRepo) GetLastInsertedResId() (int, error) {
-	row := cmr.db.QueryRow("SELECT MAX(category_result_id) FROM category_res")
+	row := cmr.psql.QueryRow("SELECT MAX(category_result_id) FROM category_res")
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
@@ -229,7 +229,7 @@ func (cmr *CategoryModulesResultsRepo) GetLastInsertedResId() (int, error) {
 }
 
 func (cmr *CategoryModulesResultsRepo) GetResultsByModuleId(moduleId int) ([]int, error) {
-	rows, err := cmr.db.Query("SELECT result_id FROM category_res WHERE module_id = $1", moduleId)
+	rows, err := cmr.psql.Query("SELECT result_id FROM category_res WHERE module_id = $1", moduleId)
 	if err != nil {
 		return []int{}, err
 	}
@@ -247,7 +247,7 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByModuleId(moduleId int) ([]int
 }
 
 func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryAndModule(categoryId, moduleId int) ([]int, error) {
-	rows, err := cmr.db.Query("SELECT result_id FROM category_res WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
+	rows, err := cmr.psql.Query("SELECT result_id FROM category_res WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
 	if err != nil {
 		return []int{}, err
 	}
@@ -265,7 +265,7 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryAndModule(categoryId,
 }
 
 func (cmr *CategoryModulesResultsRepo) InsertCategoryModule(categoryResultId, categoryId, moduleId, result_id int) error {
-	res, err := cmr.db.Exec("INSERT INTO category_res(category_result_id, category_id, module_id, result_id) "+
+	res, err := cmr.psql.Exec("INSERT INTO category_res(category_result_id, category_id, module_id, result_id) "+
 		"VALUES($1, $2)", categoryResultId, categoryId, moduleId, result_id)
 	if err != nil {
 		return err
@@ -277,7 +277,7 @@ func (cmr *CategoryModulesResultsRepo) InsertCategoryModule(categoryResultId, ca
 }
 
 func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategories(moduleId int) error {
-	_, err := cmr.db.Exec("DELETE FROM category_res WHERE module_id = $1", moduleId)
+	_, err := cmr.psql.Exec("DELETE FROM category_res WHERE module_id = $1", moduleId)
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategories(moduleId int)
 }
 
 func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategory(categoryId, moduleId int) error {
-	_, err := cmr.db.Exec("DELETE FROM category_res WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
+	_, err := cmr.psql.Exec("DELETE FROM category_res WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
 	if err != nil {
 		return err
 	}
@@ -293,7 +293,7 @@ func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategory(categoryId, mod
 }
 
 func (cmr *CategoryModulesResultsRepo) DeleteAllToCategory(categoryId int) error {
-	_, err := cmr.db.Exec("DELETE FROM category_res WHERE category_id = $1", categoryId)
+	_, err := cmr.psql.Exec("DELETE FROM category_res WHERE category_id = $1", categoryId)
 	if err != nil {
 		return err
 	}
@@ -301,7 +301,7 @@ func (cmr *CategoryModulesResultsRepo) DeleteAllToCategory(categoryId int) error
 }
 
 func (cmr *CategoryModulesResultsRepo) DeleteResultById(categoryResultId int) error {
-	_, err := cmr.db.Exec("DELETE FROM category_res WHERE category_result_id = $1", categoryResultId)
+	_, err := cmr.psql.Exec("DELETE FROM category_res WHERE category_result_id = $1", categoryResultId)
 	if err != nil {
 		return err
 	}

@@ -1,21 +1,21 @@
 package persistent
 
 import (
-	"database/sql"
 	"errors"
 	"interactive_learning/internal/entity"
+	"interactive_learning/internal/repo"
 )
 
 type UsersRepo struct {
-	db *sql.DB
+	psql repo.PSQL
 }
 
-func NewUsersRepo(db *sql.DB) *UsersRepo {
-	return &UsersRepo{db}
+func NewUsersRepo(psql repo.PSQL) *UsersRepo {
+	return &UsersRepo{psql}
 }
 
 func (u *UsersRepo) GetUserByLogin(login string) (entity.User, error) {
-	row := u.db.QueryRow("select * from users where login = $1", login)
+	row := u.psql.QueryRow("select * from users where login = $1", login)
 
 	user := entity.User{}
 	err := row.Scan(&user.Id, &user.Login, &user.Name, &user.PasswordHash)
@@ -27,7 +27,7 @@ func (u *UsersRepo) GetUserByLogin(login string) (entity.User, error) {
 }
 
 func (u *UsersRepo) GetUserInfoById(userId int) (entity.User, error) {
-	row := u.db.QueryRow("select id, login, name from users where id = $1", userId)
+	row := u.psql.QueryRow("select id, login, name from users where id = $1", userId)
 
 	user := entity.User{}
 	err := row.Scan(&user.Id, &user.Login, &user.Name)
@@ -39,7 +39,7 @@ func (u *UsersRepo) GetUserInfoById(userId int) (entity.User, error) {
 }
 
 func (u *UsersRepo) IsContainsLogin(login string) (bool, error) {
-	row := u.db.QueryRow("select count(*) from users where login = $1", login)
+	row := u.psql.QueryRow("select count(*) from users where login = $1", login)
 
 	var count int
 	err := row.Scan(&count)
@@ -53,7 +53,7 @@ func (u *UsersRepo) IsContainsLogin(login string) (bool, error) {
 }
 
 func (u *UsersRepo) InsertUser(user entity.User) error {
-	result, err := u.db.Exec("insert into users(login, name, password_hash) "+
+	result, err := u.psql.Exec("insert into users(login, name, password_hash) "+
 		"values($1, $2, $3)", user.Login, user.Name, user.PasswordHash)
 
 	if err != nil {

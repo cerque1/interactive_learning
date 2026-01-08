@@ -1,21 +1,21 @@
 package persistent
 
 import (
-	"database/sql"
 	"errors"
 	"interactive_learning/internal/entity"
+	"interactive_learning/internal/repo"
 )
 
 type CardsResultsRepo struct {
-	db *sql.DB
+	psql repo.PSQL
 }
 
-func NewCardsResultsRepo(db *sql.DB) *CardsResultsRepo {
-	return &CardsResultsRepo{db: db}
+func NewCardsResultsRepo(psql repo.PSQL) *CardsResultsRepo {
+	return &CardsResultsRepo{psql: psql}
 }
 
 func (crr *CardsResultsRepo) GetCardsResultById(resultId int) ([]entity.CardsResult, error) {
-	rows, err := crr.db.Query("SELECT card_id, result FROM cards_results WHERE result_id = $1", resultId)
+	rows, err := crr.psql.Query("SELECT card_id, result FROM cards_results WHERE result_id = $1", resultId)
 	if err != nil {
 		return []entity.CardsResult{}, err
 	}
@@ -36,7 +36,7 @@ func (crr *CardsResultsRepo) GetCardsResultById(resultId int) ([]entity.CardsRes
 }
 
 func (crr *CardsResultsRepo) InsertCardResult(resultId, cardId int, resultStr string) error {
-	result, err := crr.db.Exec("INSERT INTO cards_results(result_id, card_id, result) "+
+	result, err := crr.psql.Exec("INSERT INTO cards_results(result_id, card_id, result) "+
 		"VALUES($1, $2, $3)", resultId, cardId, resultStr)
 	if err != nil {
 		return err
@@ -48,7 +48,15 @@ func (crr *CardsResultsRepo) InsertCardResult(resultId, cardId int, resultStr st
 }
 
 func (crr *CardsResultsRepo) DeleteCardResult(resultId, cardId int) error {
-	_, err := crr.db.Exec("DELETE FROM cards_results WHERE result_id = $1 AND card_id = $2", resultId, cardId)
+	_, err := crr.psql.Exec("DELETE FROM cards_results WHERE result_id = $1 AND card_id = $2", resultId, cardId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (crr *CardsResultsRepo) DeleteCardsToResult(resultId int) error {
+	_, err := crr.psql.Exec("DELETE FROM cards_results WHERE result_id = $1", resultId)
 	if err != nil {
 		return err
 	}
@@ -56,7 +64,7 @@ func (crr *CardsResultsRepo) DeleteCardResult(resultId, cardId int) error {
 }
 
 func (crr *CardsResultsRepo) DeleteResultsToCard(cardId int) error {
-	_, err := crr.db.Exec("DELETE FROM cards_results WHERE card_id = $1", cardId)
+	_, err := crr.psql.Exec("DELETE FROM cards_results WHERE card_id = $1", cardId)
 	if err != nil {
 		return err
 	}

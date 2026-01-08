@@ -8,6 +8,8 @@ import (
 	"interactive_learning/internal/infrastructure"
 	"interactive_learning/internal/migrator"
 	"interactive_learning/internal/repo/persistent"
+	"interactive_learning/internal/uow"
+	uowPersistent "interactive_learning/internal/uow/persistent"
 	interactivelearning "interactive_learning/internal/usecase/interactive_learning"
 	"log"
 	"os"
@@ -62,7 +64,18 @@ func Run(migrationsDir string, migrationsFS embed.FS, pathToStatic string) {
 		log.Fatal("database not ready")
 	}
 
-	us := interactivelearning.New(persistent.NewUsersRepo(db), persistent.NewCardsRepo(db), persistent.NewModulesRepo(db), persistent.NewCategoryRepo(db), persistent.NewCategoryModulesRepo(db))
+	us := interactivelearning.New(func() uow.UnitOfWork {
+		return uowPersistent.NewUnitOfWork(db)
+	},
+		persistent.NewUsersRepo(db),
+		persistent.NewCardsRepo(db),
+		persistent.NewModulesRepo(db),
+		persistent.NewCategoryRepo(db),
+		persistent.NewCategoryModulesRepo(db),
+		persistent.NewResultsRepo(db),
+		persistent.NewCardsResultsRepo(db),
+		persistent.NewModulesResultsRepo(db),
+		persistent.NewCategoryModulesResultsRepo(db))
 	e := infrastructure.NewEcho(pathToStatic, us, us, us, us, us, us)
 
 	e.Use(middleware.Recover())
