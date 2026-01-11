@@ -605,7 +605,7 @@ func (u *UseCase) DeleteCategory(userId int, id int) error {
 		return errors.New("unavailable category")
 	}
 
-	err = u.deleteAllModulesFromCategory(userId, id, uow)
+	err = u.deleteAllModulesFromCategory(id, uow)
 	if err != nil {
 		return err
 	}
@@ -717,7 +717,7 @@ func (u *UseCase) DeleteModuleFromCategory(userId, categoryId, moduleId int) err
 	return uow.Commit()
 }
 
-func (u *UseCase) deleteAllModulesFromCategory(userId, categoryId int, uow uow.UnitOfWork) error {
+func (u *UseCase) deleteAllModulesFromCategory(categoryId int, uow uow.UnitOfWork) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
 
@@ -775,7 +775,7 @@ func (u *UseCase) InsertModuleResult(result httputils.InsertModuleResultReq) (in
 	u.resultsMutex.Lock()
 	defer u.resultsMutex.Unlock()
 
-	time, err := time.Parse(time.RFC3339, result.Result.Time)
+	time, err := time.Parse(time.DateTime, result.Result.Time)
 	if err != nil {
 		return -1, err
 	}
@@ -817,33 +817,43 @@ func (u *UseCase) InsertModuleResult(result httputils.InsertModuleResultReq) (in
 	return insertedResId, nil
 }
 
-func (u *UseCase) InsertCategoryResult(result httputils.InsertCategoryModulesResultReq) ([]int, error) {
+func (u *UseCase) InsertCategoryResult(result httputils.InsertCategoryModulesResultReq) (int, []int, error) {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
-		return []int{}, err
+		return -1, []int{}, err
 	}
 	defer uow.Rollback()
 
+	u.categoryModulesResultsMutex.Lock()
+	defer u.categoryModulesResultsMutex.Unlock()
+
 	insertedResIds := []int{}
+
+	lastInsertedResId, err := uow.GetCategoryModulesResultsRepoReader().GetLastInsertedResId()
+	if err != nil {
+		return -1, []int{}, err
+	}
+	newInsertResultId := lastInsertedResId + 1
+
 	for _, modulesRes := range result.Modules {
 		u.resultsMutex.Lock()
 		defer u.resultsMutex.Unlock()
 
-		time, err := time.Parse(time.RFC3339, modulesRes.Result.Time)
+		time, err := time.Parse(time.DateTime, modulesRes.Result.Time)
 		if err != nil {
-			return []int{}, err
+			return -1, []int{}, err
 		}
 
 		err = uow.GetResultsRepoWriter().InsertResult(entity.Result{Owner: modulesRes.Result.Owner,
 			Type: modulesRes.Result.Type,
 			Time: time})
 		if err != nil {
-			return []int{}, err
+			return -1, []int{}, err
 		}
 
 		insertedResId, err := uow.GetResultsRepoReader().GetLastInsertedResultId()
 		if err != nil {
-			return []int{}, err
+			return -1, []int{}, err
 		}
 
 		u.cardsResultsMutex.Lock()
@@ -852,30 +862,22 @@ func (u *UseCase) InsertCategoryResult(result httputils.InsertCategoryModulesRes
 		for _, cardRes := range modulesRes.Result.CardsRes {
 			err = uow.GetCardsResultsRepoWriter().InsertCardResult(insertedResId, cardRes.CardId, cardRes.Result)
 			if err != nil {
-				return []int{}, err
+				return -1, []int{}, err
 			}
 		}
 		insertedResIds = append(insertedResIds, insertedResId)
 
-		u.categoryModulesResultsMutex.Lock()
-		defer u.categoryModulesResultsMutex.Unlock()
-
-		lastInsertedResId, err := uow.GetCategoryModulesResultsRepoReader().GetLastInsertedResId()
+		err = uow.GetCategoryModulesResultsRepoWriter().InsertCategoryModule(newInsertResultId, result.CategoryId, modulesRes.ModuleId, insertedResId)
 		if err != nil {
-			return []int{}, err
-		}
-
-		err = uow.GetCategoryModulesResultsRepoWriter().InsertCategoryModule(lastInsertedResId+1, result.CategoryId, modulesRes.ModuleId, insertedResId)
-		if err != nil {
-			return []int{}, err
+			return -1, []int{}, err
 		}
 	}
 
 	if err := uow.Commit(); err != nil {
-		return []int{}, err
+		return -1, []int{}, err
 	}
 
-	return insertedResIds, nil
+	return newInsertResultId, insertedResIds, nil
 }
 
 func (u *UseCase) DeleteModuleResult(resultId int) error {

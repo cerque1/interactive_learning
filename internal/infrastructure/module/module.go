@@ -4,7 +4,6 @@ import (
 	"interactive_learning/internal/entity"
 	httputils "interactive_learning/internal/http_utils"
 	"interactive_learning/internal/usecase"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -34,7 +33,6 @@ func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
 
 	isWithCards, err := strconv.ParseBool(c.QueryParam("with_cards"))
 	if err != nil {
-		log.Println(err)
 		isWithCards = false
 	}
 

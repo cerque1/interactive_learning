@@ -5,6 +5,7 @@ import (
 	"interactive_learning/internal/infrastructure/card"
 	"interactive_learning/internal/infrastructure/category"
 	"interactive_learning/internal/infrastructure/module"
+	"interactive_learning/internal/infrastructure/results"
 	"interactive_learning/internal/infrastructure/user"
 	"interactive_learning/internal/usecase"
 	"net/http"
@@ -13,12 +14,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens, cardUC usecase.Cards, modulesUC usecase.Modules, categorieUC usecase.Categories, categoryModulesUC usecase.CategoryModules) *echo.Echo {
+func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens, cardUC usecase.Cards, modulesUC usecase.Modules, categorieUC usecase.Categories, categoryModulesUC usecase.CategoryModules, resultsUC usecase.Results) *echo.Echo {
 	authRoutes := auth.NewAuthRoutes(usersUC, tokensUC)
 	usersRoutes := user.NewUserRoues(usersUC)
 	moduleRoutes := module.NewModuleRoutes(modulesUC, cardUC)
 	cardRoutes := card.NewCardRoutes(cardUC)
 	categoriesRoutes := category.NewCategoryRoutes(categorieUC, categoryModulesUC)
+	resultsRoutes := results.NewResultsRoutes(resultsUC)
 
 	e := echo.New()
 	e.Static("/static", pathToStatic)
@@ -35,6 +37,19 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 	users := v1.Group("/user")
 	users.GET("/me", usersRoutes.GetUserInfoById)
 	users.GET("/:id", usersRoutes.GetUserInfoById)
+
+	results := v1.Group("/results")
+	results.GET("/to_user/:id", resultsRoutes.GetResultsByOwner)
+	results.GET("/cards_result/:result_id", resultsRoutes.GetCardsResultById)
+	results.GET("/category_result/:category_res_id", resultsRoutes.GetCategoryResById)
+
+	moduleResult := results.Group("/module_result")
+	moduleResult.POST("/insert", resultsRoutes.InsertModuleResult)
+	moduleResult.DELETE("/delete/:id", resultsRoutes.DeleteModuleResult)
+
+	categoryResult := results.Group("category_result")
+	categoryResult.POST("/insert", resultsRoutes.InsertCategoryResult)
+	categoryResult.DELETE("/delete/:id", resultsRoutes.DeleteCategoryResultById)
 
 	categories := v1.Group("/category")
 	categories.POST("/:category_id/add_modules", categoriesRoutes.InsertModulesToCategory)
