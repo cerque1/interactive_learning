@@ -24,20 +24,22 @@ type GetModulesByIdsReq struct {
 }
 
 type ResultForReq struct {
-	Owner    int                  `json:"owner"`
 	Type     string               `json:"type"`
-	Time     string               `json:"time"`
 	CardsRes []entity.CardsResult `json:"cards_result,omitempty"`
 }
 
 type InsertModuleResultReq struct {
 	ModuleId int          `json:"module_id"`
-	Result   ResultForReq `json:"result,inline"`
+	Result   ResultForReq `json:"result"`
+	Owner    int          `json:"owner"`
+	Time     string       `json:"time,omitempty"`
 }
 
 type InsertCategoryModulesResultReq struct {
 	CategoryId int                     `json:"category_id"`
 	Modules    []InsertModuleResultReq `json:"modules_res"`
+	Owner      int                     `json:"owner"`
+	Time       string                  `json:"time"`
 }
 
 func GetModulesCreateReqFromJson(body []byte) (ModuleCreateReq, error) {

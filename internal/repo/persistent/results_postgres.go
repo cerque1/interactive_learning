@@ -25,9 +25,7 @@ func (rr *ResultsRepo) GetResultsByOwner(ownerId int) ([]entity.Result, error) {
 	for rows.Next() {
 		r := entity.Result{}
 		err = rows.Scan(&r.Id,
-			&r.Owner,
-			&r.Type,
-			&r.Time)
+			&r.Type)
 		if err != nil {
 			return []entity.Result{}, err
 		}
@@ -41,9 +39,7 @@ func (rr *ResultsRepo) GetResultById(id int) (entity.Result, error) {
 	row := rr.psql.QueryRow("SELECT * FROM results id = $1", id)
 	r := entity.Result{}
 	err := row.Scan(&r.Id,
-		&r.Owner,
-		&r.Type,
-		&r.Time)
+		&r.Type)
 	if err != nil {
 		return entity.Result{}, err
 	}
@@ -61,8 +57,8 @@ func (rr *ResultsRepo) GetLastInsertedResultId() (int, error) {
 }
 
 func (rr *ResultsRepo) InsertResult(result entity.Result) error {
-	res, err := rr.psql.Exec("INSERT INTO results(owner, type, time) "+
-		"VALUES($1, $2, $3, $4, $5)", result.Owner, result.Type, result.Time)
+	res, err := rr.psql.Exec("INSERT INTO results(type) "+
+		"VALUES($1)", result.Type)
 	if err != nil {
 		return err
 	}

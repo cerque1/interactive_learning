@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Результат - Заучка</title>
+<link rel="stylesheet" href="result_style.css" />
+</head>
+<body>
+<header>
+  <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
+  <a id="head" href="/static/main.html" class="header-link">Заучка</a>
+  <div id="username"></div>
+</header>
+
+<main>
+  <nav id="nav-panel">
+    <h2>Панель навигации</h2>
+    <button id="main-btn">Главная</button>
+    <button id="modules-btn">Модули</button>
+    <button id="categories-btn">Категории</button>
+    <button id="results-btn">Результаты</button>
+  </nav>  
+
+  <div id="nav-panel-overlay"></div>
+
+  <section id="result-section">
+    <div class="section-header">
+      <h2 id="page-title">Результат</h2>
+    </div>
+    
+    <div class="result-content">
+      <!-- Диаграмма -->
+      <div class="chart-container">
+        <div class="stats-circle">
+         <div class="pie-chart" id="pieChart">
+           <div class="pie-chart__slice correct-slice" id="correctSlice"></div>
+           <div class="pie-chart__slice incorrect-slice" id="incorrectSlice"></div>
+         </div>
+         <div class="stats-center">
+           <div class="stats-total" id="statsTotal">0</div>
+           <div class="stats-label">всего</div>
+         </div>
+        </div>
+        <div class="stats-legend">
+         <div class="legend-item">
+           <div class="legend-color correct"></div>
+           <span>Правильно</span>
+           <span id="correctCount" class="legend-number">0</span>
+         </div>
+         <div class="legend-item">
+           <div class="legend-color incorrect"></div>
+           <span>Неправильно</span>
+           <span id="incorrectCount" class="legend-number">0</span>
+         </div>
+        </div>
+      </div>
+      
+      <!-- Информация о результате -->
+      <div class="result-info">
+        <h3 id="resultTitle">Загрузка...</h3>
+        <div class="info-item">
+          <span class="info-label">Тип:</span>
+          <span id="resultType" class="info-value"></span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Время:</span>
+          <span id="resultTime" class="info-value"></span>
+        </div>
+        <div class="info-item" id="resultCategory">
+          <span class="info-label">Категория:</span>
+          <span id="categoryName" class="info-value"></span>
+        </div>
+        <div class="info-item" id="resultModule">
+          <span class="info-label">Модуль:</span>
+          <span id="moduleName" class="info-value"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Подробные результаты -->
+    <div id="detailed-results-container" class="detailed-results-container"></div>
+  </section>
+</main>
+
+<script src="result_script.js"></script>
+</body>
+</html>

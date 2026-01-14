@@ -35,7 +35,6 @@ func (cr *CategoryRepo) GetCategoriesToUser(userId int) ([]entity.Category, erro
 
 func (cr *CategoryRepo) GetCategoryById(id int) (entity.Category, error) {
 	row := cr.psql.QueryRow("SELECT * FROM categories WHERE id = $1", id)
-
 	category := entity.Category{}
 	err := row.Scan(&category.Id, &category.Name, &category.OwnerId)
 	if err != nil {

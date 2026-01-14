@@ -2,7 +2,7 @@ let cards = [];
 let currentQuestionIndex = 0;
 let correctAnswers = 0;
 let incorrectAnswers = 0;
-let answeredQuestions = new Set();
+let questionResults = {};
 let categoryId = null;
 let modulesIds = [];
 let isAnswerLocked = false;
@@ -216,7 +216,7 @@ function showQuestion(index) {
                 opt.style.pointerEvents = 'none';
             });
             
-            selectAnswer(i, answer, questionData.correctDefinition);
+            selectAnswer(index, answer, questionData.correctDefinition);
         });
         
         answersContainer.appendChild(option);
@@ -224,17 +224,17 @@ function showQuestion(index) {
     
     const nextBtn = document.getElementById('next-btn');
     if (nextBtn) nextBtn.style.display = 'none';
-    
-    answeredQuestions.delete(index);
 }
 
-function selectAnswer(selectedIndex, selectedAnswer, correctDefinition) {
+function selectAnswer(questionIndex, selectedAnswer, correctDefinition) {
     if (isAnswerLocked) return;
     
     isAnswerLocked = true;
     
     const options = document.querySelectorAll('.answer-option');
-    let isCorrect = false;
+    const isCorrect = selectedAnswer === correctDefinition;
+    
+    questionResults[questionIndex] = isCorrect ? 'correct' : 'incorrect';
     
     options.forEach((option, i) => {
         const optionText = option.dataset.answerText || option.textContent;
@@ -243,12 +243,8 @@ function selectAnswer(selectedIndex, selectedAnswer, correctDefinition) {
         
         if (optionText === correctDefinition) {
             option.classList.add('correct');
-            if (i === selectedIndex) {
-                isCorrect = true;
-            }
-        } else if (i === selectedIndex) {
+        } else if (option.dataset.answerText === selectedAnswer) {
             option.classList.add('incorrect');
-            isCorrect = false;
         }
     });
     
@@ -258,7 +254,6 @@ function selectAnswer(selectedIndex, selectedAnswer, correctDefinition) {
         incorrectAnswers++;
     }
     
-    answeredQuestions.add(currentQuestionIndex);
     const nextBtn = document.getElementById('next-btn');
     if (nextBtn) {
         if (currentQuestionIndex + 1 >= cards.length){
@@ -276,33 +271,43 @@ function nextQuestion() {
 }
 
 function endTestPrematurely() {
-    const remainingQuestions = cards.length - answeredQuestions.size;
-    incorrectAnswers += remainingQuestions;
+    for (let i = 0; i < cards.length; i++) {
+        if (!(i in questionResults)) {
+            questionResults[i] = 'incorrect';
+            incorrectAnswers++;
+        }
+    }
     showResults();
 }
 
-function showResults() {
+function toLocalISOString(date = new Date()) {
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    date.setMilliseconds(0)
+    return date.toISOString().replace('T', ' ').replace('Z', '')
+}
+
+async function showResults() {
     const testArea = document.getElementById('test-area');
     if (testArea) testArea.style.display = 'none';
-    
+
     const resultsScreen = document.getElementById('results-screen');
     if (!resultsScreen) return;
-    
+
     const percent = cards.length > 0 ? Math.round((correctAnswers / cards.length) * 100) : 0;
-    
+
     const resultsCorrect = document.getElementById('results-correct');
     const resultsIncorrect = document.getElementById('results-incorrect');
     const resultsPercent = document.getElementById('results-percent');
-    
+
     if (resultsCorrect) resultsCorrect.textContent = correctAnswers;
     if (resultsIncorrect) resultsIncorrect.textContent = incorrectAnswers;
     if (resultsPercent) resultsPercent.textContent = `${percent}%`;
-    
+
     resultsScreen.classList.remove('hidden');
-    
+
     const repeatBtn = document.getElementById('repeat-test-btn');
     if (repeatBtn) repeatBtn.onclick = restartTest;
-    
+
     const backBtn = document.getElementById('back-from-results-btn');
     if (backBtn) {
         if (categoryId) {
@@ -313,10 +318,97 @@ function showResults() {
             const moduleIdParam = params.get('modules_ids');
             backBtn.textContent = 'К модулю';
             backBtn.onclick = () => {
-                window.location.href = moduleIdParam ? 
+                window.location.href = moduleIdParam ?
                     `/static/module.html?module_id=${moduleIdParam}` : '/static/main.html';
             };
         }
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            return;
+        }
+
+        cards.forEach((card, index) => {
+            if (!(index in questionResults)) {
+                questionResults[index] = 'incorrect';
+            }
+        });
+
+        let endpoint, payload;
+
+        date = new Date();
+        time = date.toISOString().replace('T', ' ').replace('Z', '');
+
+        if (categoryId && modulesIds.length > 1) {
+            endpoint = 'http://localhost:8080/api/v1/results/category_result/insert';
+            
+            const moduleCardsMap = {};
+            moduleData.modules.forEach(module => {
+                moduleCardsMap[module.id] = module.cards.map(card => card.id);
+            });
+            
+            const modulesResults = {};
+            modulesIds.forEach(moduleId => {
+                const moduleCards = moduleCardsMap[moduleId] || [];
+                const cardsResult = moduleCards.map(cardId => {
+                    const cardIndex = cards.findIndex(c => c.id === cardId);
+                    return {
+                        card_id: cardId,
+                        result: questionResults[cardIndex] === 'correct' ? 'correct' : 'incorrect'
+                    };
+                }).filter(item => item.card_id);
+                
+                modulesResults[moduleId] = {
+                    module_id: moduleId,
+                    result: {
+                        type: 'test',
+                        cards_result: cardsResult
+                    }
+                };
+            });
+            
+            payload = {
+                category_id: categoryId,
+                time: time,
+                modules_res: Object.values(modulesResults)
+            };
+        } else {
+            endpoint = 'http://localhost:8080/api/v1/results/module_result/insert';
+            
+            const cardsResult = cards.map(card => ({
+                card_id: card.id,
+                result: questionResults[cards.indexOf(card)] === 'correct' ? 'correct' : 'incorrect'
+            }));
+            
+            payload = {
+                module_id: modulesIds[0],
+                time: time,
+                result: {
+                    type: 'test',
+                    cards_result: cardsResult
+                }
+            };
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Ошибка отправки результатов: ${response.statusText}`);
+        }
+
+        console.log('Результаты успешно отправлены на сервер');
+    } catch (error) {
+        console.error('Ошибка при отправке результатов:', error);
+        alert('Не удалось отправить результаты на сервер. Проверьте подключение и повторите попытку.');
     }
 }
 
@@ -324,7 +416,7 @@ function restartTest() {
     currentQuestionIndex = 0;
     correctAnswers = 0;
     incorrectAnswers = 0;
-    answeredQuestions.clear();
+    questionResults = {};
     isAnswerLocked = false;
     
     const testArea = document.getElementById('test-area');

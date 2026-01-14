@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Заучка - Профиль</title>
+  <link rel="stylesheet" href="profile_style.css" />
+</head>
+<body>
+  <header>
+    <button id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+    <h1>Заучка</h1>
+    <div id="username"></div>
+  </header>
+
+  <main>
+    <nav id="nav-panel">
+      <h2>Панель навигации</h2>
+      <button id="main-btn">Главная</button>
+      <button id="modules-btn">Модули</button>
+      <button id="categories-btn">Категории</button>
+      <button id="results-btn">Результаты</button>
+    </nav>  
+
+    <!-- ПРОФИЛЬ -->
+    <section id="profile-section">
+      <div class="profile-header">
+        <div class="profile-info">
+          <h1 id="profile-name">Загрузка...</h1>
+          <div id="profile-login" class="profile-login"></div>
+        </div>
+        <button id="change-password-btn" class="change-password-btn">
+          🔐 Сменить пароль
+        </button>
+      </div>
+
+      <!-- МОИ МОДУЛИ -->
+      <section class="content-section">
+        <h2 id="modules-header">Мои модули</h2>
+        <div id="modules-container" class="cards-container"></div>
+        <div id="modules-empty" class="empty-message" style="display:none;">Модули отсутствуют</div>
+      </section>
+
+      <!-- МОИ КАТЕГОРИИ -->
+      <section class="content-section">
+        <h2 id="categories-header">Мои категории</h2>
+        <div id="categories-container" class="cards-container"></div>
+        <div id="categories-empty" class="empty-message" style="display:none;">Категории отсутствуют</div>
+      </section>
+
+      <!-- МОИ РЕЗУЛЬТАТЫ -->
+      <section class="content-section">
+        <h2 id="results-header">Мои результаты</h2>
+        <div id="results-container" class="cards-container"></div>
+        <div id="results-empty" class="empty-message">Результаты отсутствуют</div>
+      </section>
+    </section>
+  </main>
+
+  <script src="profile_script.js"></script>
+</body>
+</html>

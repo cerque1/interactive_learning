@@ -16,9 +16,9 @@ func NewCategoryModulesResultsRepo(psql repo.PSQL) *CategoryModulesResultsRepo {
 }
 
 func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]entity.CategoryModulesResult, error) {
-	rows, err := cmr.psql.Query("SELECT category_res.category_result_id, category_res.category_id, category_res.module_id, results.* "+
+	rows, err := cmr.psql.Query("SELECT category_res.category_result_id, category_res.category_id, category_res.module_id, category_res.time, results.* "+
 		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
-		"WHERE results.\"owner\" = $1 "+
+		"WHERE category_res.\"owner\" = $1 "+
 		"ORDER BY category_res.category_result_id", ownerId)
 	if err != nil {
 		return []entity.CategoryModulesResult{}, err
@@ -27,40 +27,46 @@ func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]e
 	categoryRes := map[int]entity.CategoryModulesResult{}
 	first := true
 	var tempResId int
-	var timeStr string
-	oneCategoryRes := entity.CategoryModulesResult{}
+	var tempCategoryId int
+	var tempTime string
+	oneCategoryRes := entity.CategoryModulesResult{Owner: ownerId}
 	for rows.Next() {
 		moduleRes := entity.ModuleResult{}
 		err = rows.Scan(&tempResId,
-			&oneCategoryRes.CategoryId,
+			&tempCategoryId,
 			&moduleRes.ModuleId,
+			&tempTime,
 			&moduleRes.Result.Id,
-			&moduleRes.Result.Owner,
-			&moduleRes.Result.Type,
-			&timeStr)
+			&moduleRes.Result.Type)
 		if err != nil {
 			return []entity.CategoryModulesResult{}, err
 		}
 
 		if first {
 			oneCategoryRes.CategoryResultId = tempResId
+			oneCategoryRes.CategoryId = tempCategoryId
+			parseTime, err := time.Parse(time.RFC3339, tempTime)
+			if err != nil {
+				return []entity.CategoryModulesResult{}, err
+			}
+			oneCategoryRes.Time = parseTime
+
 			first = false
 		}
 
-		if oneCategoryRes.CategoryId != tempResId {
-			categoryRes[oneCategoryRes.CategoryId] = oneCategoryRes
-			oneCategoryRes = entity.CategoryModulesResult{CategoryResultId: tempResId}
-		}
+		if oneCategoryRes.CategoryResultId != tempResId {
+			categoryRes[oneCategoryRes.CategoryResultId] = oneCategoryRes
 
-		parseTime, err := time.Parse(time.RFC3339, timeStr)
-		if err != nil {
-			return []entity.CategoryModulesResult{}, err
+			parseTime, err := time.Parse(time.RFC3339, tempTime)
+			if err != nil {
+				return []entity.CategoryModulesResult{}, err
+			}
+			oneCategoryRes = entity.CategoryModulesResult{CategoryResultId: tempResId, CategoryId: tempCategoryId, Owner: ownerId, Time: parseTime}
 		}
-		moduleRes.Result.Time = parseTime
 
 		oneCategoryRes.Modules = append(oneCategoryRes.Modules, moduleRes)
 	}
-	categoryRes[oneCategoryRes.CategoryId] = oneCategoryRes
+	categoryRes[oneCategoryRes.CategoryResultId] = oneCategoryRes
 
 	categoryResArray := []entity.CategoryModulesResult{}
 	for _, value := range categoryRes {
@@ -71,7 +77,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]e
 }
 
 func (cmr *CategoryModulesResultsRepo) GetCategoryResById(categoryResultsId int) (entity.CategoryModulesResult, error) {
-	rows, err := cmr.psql.Query("SELECT category_res.category_id, category_res.module_id, results.* "+
+	rows, err := cmr.psql.Query("SELECT category_res.category_id, category_res.\"owner\", category_res.module_id, category_res.time, results.* "+
 		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
 		"WHERE category_result_id = $1", categoryResultsId)
 	if err != nil {
@@ -81,28 +87,23 @@ func (cmr *CategoryModulesResultsRepo) GetCategoryResById(categoryResultsId int)
 	categoryRes := entity.CategoryModulesResult{CategoryResultId: categoryResultsId}
 	first := true
 	var tempCategoryId int
-	var timeStr string
+	var tempOwner int
 	for rows.Next() {
 		moduleRes := entity.ModuleResult{}
 		err = rows.Scan(&tempCategoryId,
+			&tempOwner,
 			&moduleRes.ModuleId,
+			&categoryRes.Time,
 			&moduleRes.Result.Id,
-			&moduleRes.Result.Owner,
-			&moduleRes.Result.Type,
-			&timeStr)
+			&moduleRes.Result.Type)
 		if err != nil {
 			return entity.CategoryModulesResult{}, err
 		}
 		if first {
 			categoryRes.CategoryId = tempCategoryId
+			categoryRes.Owner = tempOwner
 			first = false
 		}
-
-		parseTime, err := time.Parse(time.RFC3339, timeStr)
-		if err != nil {
-			return entity.CategoryModulesResult{}, err
-		}
-		moduleRes.Result.Time = parseTime
 
 		categoryRes.Modules = append(categoryRes.Modules, moduleRes)
 	}
@@ -111,9 +112,9 @@ func (cmr *CategoryModulesResultsRepo) GetCategoryResById(categoryResultsId int)
 }
 
 func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryOwner(categoryId, userId int) ([]entity.CategoryModulesResult, error) {
-	rows, err := cmr.psql.Query("SELECT category_res.category_result_id, category_res.module_id, results.* "+
+	rows, err := cmr.psql.Query("SELECT category_res.category_result_id, category_res.module_id, category_res.time, results.* "+
 		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
-		"WHERE category_id = $1 AND results.owner = $2 "+
+		"WHERE category_id = $1 AND category_res.owner = $2 "+
 		"ORDER BY category_res.category_result_id", categoryId, userId)
 	if err != nil {
 		return []entity.CategoryModulesResult{}, err
@@ -122,93 +123,43 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryOwner(categoryId, use
 	categoryRes := map[int]entity.CategoryModulesResult{}
 	first := true
 	var tempResId int
-	var timeStr string
-	oneCategoryRes := entity.CategoryModulesResult{CategoryId: categoryId}
+	var tempTime string
+	oneCategoryRes := entity.CategoryModulesResult{CategoryId: categoryId, Owner: userId}
 	for rows.Next() {
 		moduleRes := entity.ModuleResult{}
 		err = rows.Scan(&tempResId,
 			&moduleRes.ModuleId,
+			&tempTime,
 			&moduleRes.Result.Id,
-			&moduleRes.Result.Owner,
-			&moduleRes.Result.Type,
-			&timeStr)
+			&moduleRes.Result.Type)
 		if err != nil {
 			return []entity.CategoryModulesResult{}, err
 		}
 
 		if first {
 			oneCategoryRes.CategoryResultId = tempResId
+			parseTime, err := time.Parse(time.RFC3339, tempTime)
+			if err != nil {
+				return []entity.CategoryModulesResult{}, err
+			}
+			oneCategoryRes.Time = parseTime
+
 			first = false
 		}
 
-		if oneCategoryRes.CategoryId != tempResId {
-			categoryRes[oneCategoryRes.CategoryId] = oneCategoryRes
-			oneCategoryRes = entity.CategoryModulesResult{CategoryId: categoryId, CategoryResultId: tempResId}
-		}
+		if oneCategoryRes.CategoryResultId != tempResId {
+			categoryRes[oneCategoryRes.CategoryResultId] = oneCategoryRes
 
-		parseTime, err := time.Parse(time.RFC3339, timeStr)
-		if err != nil {
-			return []entity.CategoryModulesResult{}, err
+			parseTime, err := time.Parse(time.RFC3339, tempTime)
+			if err != nil {
+				return []entity.CategoryModulesResult{}, err
+			}
+			oneCategoryRes = entity.CategoryModulesResult{CategoryResultId: tempResId, CategoryId: categoryId, Owner: userId, Time: parseTime}
 		}
-		moduleRes.Result.Time = parseTime
 
 		oneCategoryRes.Modules = append(oneCategoryRes.Modules, moduleRes)
 	}
-	categoryRes[oneCategoryRes.CategoryId] = oneCategoryRes
-
-	categoryResArray := []entity.CategoryModulesResult{}
-	for _, value := range categoryRes {
-		categoryResArray = append(categoryResArray, value)
-	}
-
-	return categoryResArray, nil
-}
-
-func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryId(categoryId int) ([]entity.CategoryModulesResult, error) {
-	rows, err := cmr.psql.Query("SELECT category_res.category_result_id, category_res.module_id, results.* "+
-		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
-		"WHERE category_id = $1 "+
-		"ORDER BY category_res.category_result_id", categoryId)
-	if err != nil {
-		return []entity.CategoryModulesResult{}, err
-	}
-
-	categoryRes := map[int]entity.CategoryModulesResult{}
-	first := true
-	var tempResId int
-	var timeStr string
-	oneCategoryRes := entity.CategoryModulesResult{CategoryId: categoryId}
-	for rows.Next() {
-		moduleRes := entity.ModuleResult{}
-		err = rows.Scan(&tempResId,
-			&moduleRes.ModuleId,
-			&moduleRes.Result.Id,
-			&moduleRes.Result.Owner,
-			&moduleRes.Result.Type,
-			&timeStr)
-		if err != nil {
-			return []entity.CategoryModulesResult{}, err
-		}
-
-		if first {
-			oneCategoryRes.CategoryResultId = tempResId
-			first = false
-		}
-
-		if oneCategoryRes.CategoryId != tempResId {
-			categoryRes[oneCategoryRes.CategoryId] = oneCategoryRes
-			oneCategoryRes = entity.CategoryModulesResult{CategoryId: categoryId, CategoryResultId: tempResId}
-		}
-
-		parseTime, err := time.Parse(time.RFC3339, timeStr)
-		if err != nil {
-			return []entity.CategoryModulesResult{}, err
-		}
-		moduleRes.Result.Time = parseTime
-
-		oneCategoryRes.Modules = append(oneCategoryRes.Modules, moduleRes)
-	}
-	categoryRes[oneCategoryRes.CategoryId] = oneCategoryRes
+	categoryRes[oneCategoryRes.CategoryResultId] = oneCategoryRes
 
 	categoryResArray := []entity.CategoryModulesResult{}
 	for _, value := range categoryRes {
@@ -219,7 +170,7 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryId(categoryId int) ([
 }
 
 func (cmr *CategoryModulesResultsRepo) GetLastInsertedResId() (int, error) {
-	row := cmr.psql.QueryRow("SELECT MAX(category_result_id) FROM category_res")
+	row := cmr.psql.QueryRow("SELECT COALESCE(MAX(category_result_id), 0) AS max_id FROM category_res")
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
@@ -264,9 +215,9 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryAndModule(categoryId,
 	return ids, nil
 }
 
-func (cmr *CategoryModulesResultsRepo) InsertCategoryModule(categoryResultId, categoryId, moduleId, result_id int) error {
-	res, err := cmr.psql.Exec("INSERT INTO category_res(category_result_id, category_id, module_id, result_id) "+
-		"VALUES($1, $2)", categoryResultId, categoryId, moduleId, result_id)
+func (cmr *CategoryModulesResultsRepo) InsertCategoryModule(categoryResultId, categoryId, moduleId, resultId, ownerId int, time time.Time) error {
+	res, err := cmr.psql.Exec("INSERT INTO category_res(category_result_id, category_id, module_id, result_id, owner, time) "+
+		"VALUES($1, $2, $3, $4, $5, $6)", categoryResultId, categoryId, moduleId, resultId, ownerId, time)
 	if err != nil {
 		return err
 	}

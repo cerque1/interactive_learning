@@ -3,6 +3,7 @@ package repo
 import (
 	"interactive_learning/internal/entity"
 	"interactive_learning/internal/utils/tokengenerator"
+	"time"
 )
 
 type TokenStorage interface {
@@ -95,13 +96,14 @@ type CardsResultsRepoWrite interface {
 }
 
 type ModulesResultsRepoRead interface {
+	GetModulesResultById(resultId int) (entity.ModuleResult, error)
 	GetModulesResByOwner(ownerId int) ([]entity.ModuleResult, error)
 	GetResultsToModuleOwner(moduleId, ownerId int) ([]entity.ModuleResult, error)
 	GetResultsToModule(moduleId int) ([]entity.ModuleResult, error)
 }
 
 type ModulesResultsRepoWrite interface {
-	InsertResultToModule(moduleId, resultId int) error
+	InsertResultToModule(moduleId, resultId, ownerId int, time time.Time) error
 	DeleteResultsToModule(moduleId int) error
 	DeleteResultToModule(resultId int) error
 }
@@ -110,14 +112,13 @@ type CategoryModulesResultsRepoRead interface {
 	GetCategoriesResByOwner(ownerId int) ([]entity.CategoryModulesResult, error)
 	GetCategoryResById(categoryResultsId int) (entity.CategoryModulesResult, error)
 	GetResultsByCategoryOwner(categoryId, ownerId int) ([]entity.CategoryModulesResult, error)
-	GetResultsByCategoryId(categoryId int) ([]entity.CategoryModulesResult, error)
 	GetResultsByCategoryAndModule(categoryId, moduleId int) ([]int, error)
 	GetLastInsertedResId() (int, error)
 	GetResultsByModuleId(moduleId int) ([]int, error)
 }
 
 type CategoryModulesResultsRepoWrite interface {
-	InsertCategoryModule(categoryResultId, categoryId, moduleId, result_id int) error
+	InsertCategoryModule(categoryResultId, categoryId, moduleId, result_id, ownerId int, time time.Time) error
 	DeleteModulesFromCategories(moduleId int) error
 	DeleteModulesFromCategory(categoryId, moduleId int) error
 	DeleteAllToCategory(categoryId int) error

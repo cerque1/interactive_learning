@@ -36,12 +36,7 @@ func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
 		isWithCards = false
 	}
 
-	var modules []entity.Module
-	if !isWithCards {
-		modules, err = mr.ModuleUC.GetModulesByUser(id)
-	} else {
-		modules, err = mr.ModuleUC.GetModulesWithCardsByUser(id)
-	}
+	modules, err := mr.ModuleUC.GetModulesByUser(id, isWithCards)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),

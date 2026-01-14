@@ -29,10 +29,9 @@ type Cards interface {
 }
 
 type Modules interface {
-	GetModulesByUser(userId int) ([]entity.Module, error)
+	GetModulesByUser(userId int, withCards bool) ([]entity.Module, error)
 	GetModuleById(moduleId int) (entity.Module, error)
 	GetModulesByIds(modulesIds []int, isFull bool) ([]entity.Module, error)
-	GetModulesWithCardsByUser(userId int) ([]entity.Module, error)
 	GetModuleOwnerId(moduleId int) (int, error)
 	InsertModule(module entity.ModuleToCreate) (int, []int, error)
 	RenameModule(userId, moduleId int, newName string) error
@@ -55,6 +54,7 @@ type CategoryModules interface {
 
 type Results interface {
 	GetResultsByOwner(userId int) ([]entity.CategoryModulesResult, []entity.ModuleResult, error)
+	GetModuleResultById(resultId int) (entity.ModuleResult, error)
 	GetCardsResultById(resultId int) ([]entity.CardsResult, error)
 	GetResultsToModuleId(moduleId, userId int) ([]entity.ModuleResult, error)
 	GetResultsByCategoryId(categoryId, userId int) ([]entity.CategoryModulesResult, error)

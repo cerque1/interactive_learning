@@ -79,6 +79,27 @@ func (rr *ResultsRoutes) GetResultsByOwner(c echo.Context) error {
 	})
 }
 
+func (rr *ResultsRoutes) GetModuleResultById(c echo.Context) error {
+	idStr := c.Param("result_id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad result id",
+		})
+	}
+
+	moduleRes, err := rr.ResultsUC.GetModuleResultById(id)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"module_res": moduleRes,
+	})
+}
+
 func (rr *ResultsRoutes) GetCardsResultById(c echo.Context) error {
 	idStr := c.Param("result_id")
 	id, err := strconv.Atoi(idStr)
@@ -129,6 +150,14 @@ func (rr *ResultsRoutes) InsertModuleResult(c echo.Context) error {
 		})
 	}
 
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+	insertModuleReq.Owner = userId
+
 	newId, err := rr.ResultsUC.InsertModuleResult(insertModuleReq)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -147,6 +176,14 @@ func (rr *ResultsRoutes) InsertCategoryResult(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
+
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+	insertCategoryReq.Owner = userId
 
 	newCategoryResultId, newResultsIds, err := rr.ResultsUC.InsertCategoryResult(insertCategoryReq)
 	if err != nil {

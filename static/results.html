@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Мои результаты - Заучка</title>
+<link rel="stylesheet" href="results_style.css" />
+</head>
+<body>
+<header>
+  <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
+  <a id="head" href="/static/main.html" class="header-link">Заучка</a>
+  <div id="username"></div>
+</header>
+
+<main>
+  <nav id="nav-panel">
+    <h2>Панель навигации</h2>
+    <button id="main-btn">Главная</button>
+    <button id="modules-btn">Модули</button>
+    <button id="categories-btn">Категории</button>
+    <button id="results-btn">Результаты</button>
+  </nav>  
+
+  <div id="nav-panel-overlay"></div>
+
+  <section id="results-section">
+    <div class="section-header">
+      <div class="section-actions">
+        <button id="editResultsBtn" class="primary-btn">Редактировать результаты</button>
+      </div>
+      <h2 id="page-title">Мои результаты</h2>
+    </div>
+    
+    <div id="results-container" class="cards-container"></div>
+    <div id="results-empty" class="empty-message" style="display:none;">Результаты отсутствуют</div>
+  </section>
+</main>
+
+<script src="results_script.js"></script>
+</body>
+</html>

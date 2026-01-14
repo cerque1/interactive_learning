@@ -3,6 +3,7 @@ let currentCardIndex = 0;
 let isFlipped = false;
 let knownCount = 0;
 let unknownCount = 0;
+let cardResults = {};
 let modulesIds = []; 
 let categoryId = null;
 let moduleData = null;
@@ -248,6 +249,9 @@ function handleSwipe(result) {
     const card = document.querySelector('.flashcard');
     if (!card) return;
 
+    const cardData = cards[currentCardIndex];
+    cardResults[cardData.id] = result;
+
     const deltaX = result === 'known' ? 400 : -400;
     card.style.transform = `translate(-50%, -50%) translateX(${deltaX}px) rotate(${deltaX / 10}deg) scale(0.8)`;
 
@@ -271,20 +275,20 @@ function updateProgress() {
     document.getElementById('total-cards').textContent = cards.length;
 }
 
-function showResults() {
+async function showResults() {
     document.getElementById('study-area').style.display = 'none';
     const resultsScreen = document.getElementById('results-screen');
-    
+
     const percent = cards.length > 0 ? Math.round((knownCount / cards.length) * 100) : 0;
-    
+
     document.getElementById('results-known').textContent = knownCount;
     document.getElementById('results-unknown').textContent = unknownCount;
     document.getElementById('results-percent').textContent = `${percent}%`;
-    
+
     resultsScreen.classList.remove('hidden');
-    
+
     document.getElementById('repeat-btn').onclick = restartStudy;
-    
+
     const backToModuleBtn = document.getElementById('back-to-module-btn');
     if (categoryId) {
         backToModuleBtn.textContent = 'К категории';
@@ -296,9 +300,91 @@ function showResults() {
         const params = new URLSearchParams(window.location.search);
         const moduleIdParam = params.get('module_id');
         backToModuleBtn.onclick = () => {
-            window.location.href = moduleIdParam ? 
+            window.location.href = moduleIdParam ?
                 `/static/module.html?module_id=${moduleIdParam}` : '/static/main.html';
         };
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        cards.forEach((card, index) => {
+            if (!(card.id in cardResults)) {
+                cardResults[card.id] = 'incorrect';
+            }
+        });
+
+        let endpoint, payload;
+
+        date = new Date();
+        time = date.toISOString().replace('T', ' ').replace('Z', '');
+
+        if (categoryId && modulesIds.length > 1) {
+            endpoint = 'http://localhost:8080/api/v1/results/category_result/insert';
+            
+            const moduleCardsMap = {};
+            moduleData.modules.forEach(module => {
+                moduleCardsMap[module.id] = module.cards.map(card => card.id);
+            });
+            
+            const modulesResults = {};
+            modulesIds.forEach(moduleId => {
+                const moduleCards = moduleCardsMap[moduleId] || [];
+                const cardsResult = moduleCards.map(cardId => ({
+                    card_id: cardId,
+                    result: cardResults[cardId] === 'known' ? 'correct' : 'incorrect'
+                })).filter(item => item.card_id);
+                
+                modulesResults[moduleId] = {
+                    module_id: moduleId,
+                    result: {
+                        type: 'learning',
+                        cards_result: cardsResult
+                    }
+                };
+            });
+            
+            payload = {
+                category_id: categoryId,
+                time: time,
+                modules_res: Object.values(modulesResults)
+            };
+        } else {
+            endpoint = 'http://localhost:8080/api/v1/results/module_result/insert';
+            
+            const cardsResult = cards.map(card => ({
+                card_id: card.id,
+                result: cardResults[card.id] === 'known' ? 'correct' : 'incorrect'
+            }));
+            
+            payload = {
+                module_id: modulesIds[0],
+                time: time,
+                result: {
+                    type: 'learning',
+                    cards_result: cardsResult
+                }
+            };
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Ошибка отправки результатов: ${response.statusText}`);
+        }
+
+        console.log('Результаты успешно отправлены на сервер');
+    } catch (error) {
+        console.error('Ошибка при отправке результатов:', error);
+        alert('Не удалось отправить результаты на сервер');
     }
 }
 
@@ -307,6 +393,7 @@ function restartStudy() {
     knownCount = 0;
     unknownCount = 0;
     isFlipped = false;
+    cardResults = {};
     
     document.getElementById('known-count').textContent = '0';
     document.getElementById('unknown-count').textContent = '0';

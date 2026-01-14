@@ -9,19 +9,21 @@ type CardsResult struct {
 
 type Result struct {
 	Id       int           `json:"result_id"`
-	Owner    int           `json:"owner"`
 	Type     string        `json:"type"`
-	Time     time.Time     `json:"time"`
 	CardsRes []CardsResult `json:"cards_result,omitempty"`
 }
 
 type ModuleResult struct {
-	ModuleId int    `json:"module_id"`
-	Result   Result `json:"result,inline"`
+	ModuleId int        `json:"module_id"`
+	Owner    int        `json:"owner,omitempty"`
+	Time     *time.Time `json:"time,omitempty"`
+	Result   Result     `json:"result"`
 }
 
 type CategoryModulesResult struct {
 	CategoryResultId int            `json:"category_result_id"`
 	CategoryId       int            `json:"category_id"`
+	Owner            int            `json:"owner"`
+	Time             time.Time      `json:"time"`
 	Modules          []ModuleResult `json:"modules_res"`
 }

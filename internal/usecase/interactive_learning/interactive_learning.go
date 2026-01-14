@@ -89,7 +89,7 @@ func (u *UseCase) GetUserInfoById(userId int, isFull bool) (entity.User, error) 
 		return user, nil
 	}
 
-	modules, err := u.GetModulesWithCardsByUser(userId)
+	modules, err := u.GetModulesByUser(userId, false)
 	if err != nil {
 		return entity.User{}, err
 	}
@@ -315,14 +315,14 @@ func (u *UseCase) deleteCardsToParentModule(moduleId int, uow uow.UnitOfWork) er
 	return nil
 }
 
-func (u *UseCase) GetModulesByUser(userId int) ([]entity.Module, error) {
-	return u.moduleRepoRead.GetModulesByUser(userId)
-}
-
-func (u *UseCase) GetModulesWithCardsByUser(userId int) ([]entity.Module, error) {
+func (u *UseCase) GetModulesByUser(userId int, withCards bool) ([]entity.Module, error) {
 	modules, err := u.moduleRepoRead.GetModulesByUser(userId)
 	if err != nil {
 		return []entity.Module{}, err
+	}
+
+	if !withCards {
+		return modules, nil
 	}
 
 	for i := range modules {
@@ -749,6 +749,10 @@ func (u *UseCase) GetResultsByOwner(userId int) ([]entity.CategoryModulesResult,
 	return categoriesRes, modulesRes, nil
 }
 
+func (u *UseCase) GetModuleResultById(resultId int) (entity.ModuleResult, error) {
+	return u.modulesResultsRepoRead.GetModulesResultById(resultId)
+}
+
 func (u *UseCase) GetCardsResultById(resultId int) ([]entity.CardsResult, error) {
 	return u.cardsResultsRepoRead.GetCardsResultById(resultId)
 }
@@ -775,14 +779,13 @@ func (u *UseCase) InsertModuleResult(result httputils.InsertModuleResultReq) (in
 	u.resultsMutex.Lock()
 	defer u.resultsMutex.Unlock()
 
-	time, err := time.Parse(time.DateTime, result.Result.Time)
+	time, err := time.Parse(time.DateTime, result.Time)
 	if err != nil {
 		return -1, err
 	}
 
-	err = uow.GetResultsRepoWriter().InsertResult(entity.Result{Owner: result.Result.Owner,
-		Type: result.Result.Type,
-		Time: time})
+	err = uow.GetResultsRepoWriter().InsertResult(entity.Result{
+		Type: result.Result.Type})
 	if err != nil {
 		return -1, err
 	}
@@ -805,7 +808,7 @@ func (u *UseCase) InsertModuleResult(result httputils.InsertModuleResultReq) (in
 	u.modulesResultsMutex.Lock()
 	defer u.modulesResultsMutex.Unlock()
 
-	err = uow.GetModulesResultsRepoWriter().InsertResultToModule(result.ModuleId, insertedResId)
+	err = uow.GetModulesResultsRepoWriter().InsertResultToModule(result.ModuleId, insertedResId, result.Owner, time)
 	if err != nil {
 		return -1, err
 	}
@@ -824,9 +827,6 @@ func (u *UseCase) InsertCategoryResult(result httputils.InsertCategoryModulesRes
 	}
 	defer uow.Rollback()
 
-	u.categoryModulesResultsMutex.Lock()
-	defer u.categoryModulesResultsMutex.Unlock()
-
 	insertedResIds := []int{}
 
 	lastInsertedResId, err := uow.GetCategoryModulesResultsRepoReader().GetLastInsertedResId()
@@ -835,18 +835,18 @@ func (u *UseCase) InsertCategoryResult(result httputils.InsertCategoryModulesRes
 	}
 	newInsertResultId := lastInsertedResId + 1
 
+	u.resultsMutex.Lock()
+	u.cardsResultsMutex.Lock()
+	u.categoryModulesResultsMutex.Lock()
+	defer func() {
+		u.cardsResultsMutex.Unlock()
+		u.resultsMutex.Unlock()
+		u.categoryModulesResultsMutex.Unlock()
+	}()
+
 	for _, modulesRes := range result.Modules {
-		u.resultsMutex.Lock()
-		defer u.resultsMutex.Unlock()
-
-		time, err := time.Parse(time.DateTime, modulesRes.Result.Time)
-		if err != nil {
-			return -1, []int{}, err
-		}
-
-		err = uow.GetResultsRepoWriter().InsertResult(entity.Result{Owner: modulesRes.Result.Owner,
-			Type: modulesRes.Result.Type,
-			Time: time})
+		err = uow.GetResultsRepoWriter().InsertResult(entity.Result{
+			Type: modulesRes.Result.Type})
 		if err != nil {
 			return -1, []int{}, err
 		}
@@ -856,9 +856,6 @@ func (u *UseCase) InsertCategoryResult(result httputils.InsertCategoryModulesRes
 			return -1, []int{}, err
 		}
 
-		u.cardsResultsMutex.Lock()
-		defer u.cardsResultsMutex.Unlock()
-
 		for _, cardRes := range modulesRes.Result.CardsRes {
 			err = uow.GetCardsResultsRepoWriter().InsertCardResult(insertedResId, cardRes.CardId, cardRes.Result)
 			if err != nil {
@@ -867,7 +864,12 @@ func (u *UseCase) InsertCategoryResult(result httputils.InsertCategoryModulesRes
 		}
 		insertedResIds = append(insertedResIds, insertedResId)
 
-		err = uow.GetCategoryModulesResultsRepoWriter().InsertCategoryModule(newInsertResultId, result.CategoryId, modulesRes.ModuleId, insertedResId)
+		time, err := time.Parse(time.DateTime, result.Time)
+		if err != nil {
+			return -1, []int{}, err
+		}
+
+		err = uow.GetCategoryModulesResultsRepoWriter().InsertCategoryModule(newInsertResultId, result.CategoryId, modulesRes.ModuleId, insertedResId, result.Owner, time)
 		if err != nil {
 			return -1, []int{}, err
 		}
