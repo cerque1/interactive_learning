@@ -10,56 +10,112 @@ window.addEventListener('DOMContentLoaded', async () => {
   let userData = null;
   let modulesMap = {};
   let categoriesMap = {};
+  let isOwnProfile = true;
+  let currentUserId = null;
 
   try {
-    const res = await fetch('http://localhost:8080/api/v1/user/me?is_full=t', {
+    // Читаем user_id из параметров URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUserId = urlParams.get('user_id');
+
+    // Запрашиваем данные текущего пользователя
+    const meRes = await fetch('http://localhost:8080/api/v1/user/me?is_full=t', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
-    if (res.status === 401) {
+    if (meRes.status === 401) {
       window.location.href = '/static/login.html';
       return;
     }
-    if (!res.ok) {
-      throw new Error('Ошибка загрузки данных пользователя');
+    if (!meRes.ok) {
+      throw new Error('Ошибка загрузки данных текущего пользователя');
     }
 
-    userData = await res.json();
+    const meData = await meRes.json();
+    const currentUser = meData.user;
+    currentUserId = currentUser.id;
 
-    // ПРОФИЛЬ
-    document.getElementById('username').textContent = userData.user.name || 'Пользователь';
-    document.getElementById('profile-name').textContent = userData.user.name || 'Пользователь';
-    document.getElementById('profile-login').textContent = `Логин: ${userData.user.login || 'Не указан'}`;
+    // Обновляем username в хедере (всегда текущий пользователь)
+    document.getElementById('username').textContent = currentUser.name || 'Пользователь';
+    document.getElementById('username').onclick = () => window.location.href = '/static/profile.html';
 
-    // Карты модулей/категорий
+    if (!targetUserId) {
+      // Нет user_id в параметрах - показываем профиль текущего пользователя
+      userData = meData;
+      document.getElementById('change-password-btn').style.display = 'inline-block';
+      isOwnProfile = true;
+    } else {
+      // Есть user_id - проверяем, свой ли это профиль
+      if (targetUserId === currentUserId) {
+        // Свой профиль
+        userData = meData;
+        document.getElementById('change-password-btn').style.display = 'inline-block';
+        isOwnProfile = true;
+      } else {
+        // Чужой профиль - запрашиваем данные конкретного пользователя
+        const targetRes = await fetch(`http://localhost:8080/api/v1/user/${targetUserId}?is_full=t`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!targetRes.ok) {
+          throw new Error('Пользователь не найден или недоступен');
+        }
+
+        userData = await targetRes.json();
+        document.getElementById('change-password-btn').style.display = 'none';
+        isOwnProfile = false;
+
+        // Скрываем секцию результатов для чужого профиля
+        document.getElementById('results-header').closest('.content-section').style.display = 'none';
+      }
+    }
+
+    // Обновляем профильную информацию
+    const targetUser = userData.user;
+    document.getElementById('profile-name').textContent = targetUser.name || 'Пользователь';
+    document.getElementById('profile-login').textContent = `Логин: ${targetUser.login || 'Не указан'}`;
+
+    // ✅ ИЗМЕНЕНИЕ ЗАГОЛОВКОВ ДЛЯ ЧУЖОГО ПРОФИЛЯ
+    if (!isOwnProfile) {
+      document.getElementById('modules-header').textContent = 'Модули';
+      document.getElementById('categories-header').textContent = 'Категории';
+    }
+
+    // Подготавливаем карты модулей/категорий
     modulesMap = {};
-    if (userData.user.modules) {
-      userData.user.modules.forEach(module => {
+    if (targetUser.modules) {
+      targetUser.modules.forEach(module => {
         modulesMap[module.id] = module.name;
       });
     }
 
     categoriesMap = {};
-    if (userData.user.categories) {
-      userData.user.categories.forEach(category => {
+    if (targetUser.categories) {
+      targetUser.categories.forEach(category => {
         categoriesMap[category.id] = category.name;
       });
     }
 
-    // Отображаем контент
-    await displayModules(userData.user.modules);
-    await displayCategories(userData.user.categories);
-    await loadAndDisplayResults(token, userData.user.id, modulesMap, categoriesMap);
+    // Отображаем модули и категории
+    await displayModules(targetUser.modules || []);
+    await displayCategories(targetUser.categories || []);
 
-    // КНОПКА СМЕНИТЬ ПАРОЛЬ
-    document.getElementById('change-password-btn').onclick = () => {
-      const newPassword = prompt('Введите новый пароль:');
-      if (newPassword && newPassword.length >= 6) {
-        changePassword(token, newPassword);
-      } else if (newPassword) {
-        alert('Пароль должен содержать минимум 6 символов');
-      }
-    };
+    // Показываем результаты ТОЛЬКО для своего профиля
+    if (isOwnProfile) {
+      await loadAndDisplayResults(token, currentUserId, modulesMap, categoriesMap);
+    }
+
+    // Кнопка смены пароля только для своего профиля
+    if (isOwnProfile) {
+      document.getElementById('change-password-btn').onclick = () => {
+        const newPassword = prompt('Введите новый пароль:');
+        if (newPassword && newPassword.length >= 6) {
+          changePassword(token, newPassword);
+        } else if (newPassword) {
+          alert('Пароль должен содержать минимум 6 символов');
+        }
+      };
+    }
 
   } catch (error) {
     console.error('Ошибка загрузки данных:', error);
@@ -90,7 +146,6 @@ async function changePassword(token, newPassword) {
   }
 }
 
-// Функции отображения (копия из main_script.js)
 async function displayModules(modules) {
   const modulesContainer = document.getElementById('modules-container');
   const modulesEmpty = document.getElementById('modules-empty');
@@ -230,7 +285,7 @@ async function fetchEntityName(entityType, entityId, token) {
 
     if (res.ok) {
       const data = await res.json();
-      return data.name || `ID ${entityId}`;
+      return data[entityType]?.name || `ID ${entityId}`;
     }
   } catch (error) {
     console.error(`Ошибка загрузки ${entityType}:`, error);

@@ -14,6 +14,25 @@ func NewUsersRepo(psql repo.PSQL) *UsersRepo {
 	return &UsersRepo{psql}
 }
 
+func (u *UsersRepo) GetUsersWithSimilarName(name string, limit, offset int) ([]entity.User, error) {
+	name = "%" + name + "%"
+	rows, err := u.psql.Query("SELECT users.id, users.name FROM users WHERE name LIKE $1 LIMIT $2 OFFSET $3", name, limit, offset)
+	if err != nil {
+		return []entity.User{}, err
+	}
+
+	users := []entity.User{}
+	for rows.Next() {
+		u := entity.User{}
+		if err = rows.Scan(&u.Id, &u.Name); err != nil {
+			return []entity.User{}, err
+		}
+		users = append(users, u)
+	}
+
+	return users, nil
+}
+
 func (u *UsersRepo) GetUserByLogin(login string) (entity.User, error) {
 	row := u.psql.QueryRow("select * from users where login = $1", login)
 

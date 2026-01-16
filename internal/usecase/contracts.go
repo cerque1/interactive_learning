@@ -13,14 +13,15 @@ type Tokens interface {
 }
 
 type Users interface {
+	GetUsersWithSimilarName(name string, limit, offset int) ([]entity.User, error)
 	GetUserByLogin(login string) (entity.User, error)
-	GetUserInfoById(userId int, isFull bool) (entity.User, error)
+	GetUserInfoById(ownerId int, isFull bool, userId int) (entity.User, error)
 	IsContainsLogin(login string) (bool, error)
 	InsertUser(user entity.User) (int, error)
 }
 
 type Cards interface {
-	GetCardsByModule(moduleId int) ([]entity.Card, error)
+	GetCardsByModule(moduleId, userId int) ([]entity.Card, error)
 	GetCardById(cardId int) (entity.Card, error)
 	InsertCard(card entity.Card) (int, error)
 	InsertCards(cards entity.CardsToAdd) ([]int, error)
@@ -29,25 +30,29 @@ type Cards interface {
 }
 
 type Modules interface {
-	GetModulesByUser(userId int, withCards bool) ([]entity.Module, error)
-	GetModuleById(moduleId int) (entity.Module, error)
-	GetModulesByIds(modulesIds []int, isFull bool) ([]entity.Module, error)
+	GetModulesWithSimilarName(name string, limit, offset, userId int) ([]entity.Module, error)
+	GetModulesByUser(ownerId int, withCards bool, userId int) ([]entity.Module, error)
+	GetModuleById(moduleId, userId int) (entity.Module, error)
+	GetModulesByIds(modulesIds []int, isFull bool, userId int) ([]entity.Module, error)
 	GetModuleOwnerId(moduleId int) (int, error)
 	InsertModule(module entity.ModuleToCreate) (int, []int, error)
 	RenameModule(userId, moduleId int, newName string) error
+	UpdateModuleType(moduleId, newType, userId int) error
 	DeleteModule(userId int, moduleId int) error
 }
 
 type Categories interface {
-	GetCategoriesToUser(userId int, isFull bool) ([]entity.Category, error)
-	GetCategoryById(id int) (entity.Category, error)
+	GetCategoriesWithSimilarName(name string, limit, offset, userId int) ([]entity.Category, error)
+	GetCategoriesToUser(ownerId int, isFull bool, userId int) ([]entity.Category, error)
+	GetCategoryById(id, userId int) (entity.Category, error)
 	InsertCategory(category entity.CategoryToCreate) (int, error)
 	RenameCategory(userId, categoryId int, newName string) error
+	UpdateCategoryType(categoryId, newType, userId int) error
 	DeleteCategory(userId, categoryId int) error
 }
 
 type CategoryModules interface {
-	GetModulesToCategory(categoryId int, isFull bool) ([]entity.Module, error)
+	GetModulesToCategory(categoryId int, isFull bool, userId int) ([]entity.Module, error)
 	InsertModulesToCategory(userId, categoryId int, modulesIds []int) error
 	DeleteModuleFromCategory(userId, categoryId, moduleId int) error
 }

@@ -111,7 +111,10 @@ function checkEmptyState() {
 }
 
 async function loadCategories(token, userId, myId) {
-  let userid = myId || userId;
+  let userid = myId
+  if (userId) {
+    userid = userId
+  } 
   const url = `http://localhost:8080/api/v1/category/to_user/${userid}`;
 
   currentCards = [];

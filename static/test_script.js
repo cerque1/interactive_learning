@@ -341,7 +341,7 @@ async function showResults() {
         date = new Date();
         time = date.toISOString().replace('T', ' ').replace('Z', '');
 
-        if (categoryId && modulesIds.length > 1) {
+        if (categoryId) {
             endpoint = 'http://localhost:8080/api/v1/results/category_result/insert';
             
             const moduleCardsMap = {};

@@ -13,6 +13,7 @@ type TokenStorage interface {
 }
 
 type UsersRepoRead interface {
+	GetUsersWithSimilarName(name string, limit, offset int) ([]entity.User, error)
 	GetUserByLogin(login string) (entity.User, error)
 	GetUserInfoById(userId int) (entity.User, error)
 	IsContainsLogin(login string) (bool, error)
@@ -37,6 +38,7 @@ type CardRepoWrite interface {
 }
 
 type ModuleRepoRead interface {
+	GetModulesWithSimilarName(name string, limit, offset int) ([]entity.Module, error)
 	GetModulesByUser(userId int) ([]entity.Module, error)
 	GetModuleById(moduleId int) (entity.Module, error)
 	GetLastInsertedModuleId() (int, error)
@@ -46,10 +48,12 @@ type ModuleRepoRead interface {
 type ModuleRepoWrite interface {
 	InsertModule(module entity.ModuleToCreate) error
 	RenameModule(moduleId int, newName string) error
+	UpdateModuleType(moduleId, newType int) error
 	DeleteModule(moduleId int) error
 }
 
 type CategoryRepoRead interface {
+	GetCategoriesWithSimilarName(name string, limit, offset int) ([]entity.Category, error)
 	GetCategoriesToUser(userId int) ([]entity.Category, error)
 	GetCategoryById(id int) (entity.Category, error)
 	GetLastInsertedCategoryId() (int, error)
@@ -59,11 +63,14 @@ type CategoryRepoRead interface {
 type CategoryRepoWrite interface {
 	InsertCategory(category entity.CategoryToCreate) error
 	RenameCategory(categoryId int, newName string) error
+	UpdateCategoryType(categoryId, categoryType int) error
+	TurnDownCategoryType(categoryId int) error
 	DeleteCategory(categoryId int) error
 }
 
 type CategoryModulesRepoRead interface {
 	GetModulesToCategory(categoryId int) ([]entity.Module, error)
+	GetCategoriesContainsModule(moduleId int) ([]entity.Category, error)
 }
 
 type CategoryModulesRepoWrite interface {

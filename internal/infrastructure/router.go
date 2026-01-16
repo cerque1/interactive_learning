@@ -53,6 +53,11 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 	categoryResult.POST("/insert", resultsRoutes.InsertCategoryResult)
 	categoryResult.DELETE("/delete/:id", resultsRoutes.DeleteCategoryResultById)
 
+	search := v1.Group("/search")
+	search.GET("/users", usersRoutes.SearchUsers)
+	search.GET("/modules", moduleRoutes.SearchModules)
+	search.GET("/categories", categoriesRoutes.SearchCategories)
+
 	categories := v1.Group("/category")
 	categories.POST("/:category_id/add_modules", categoriesRoutes.InsertModulesToCategory)
 	categories.DELETE("/:category_id/:module_id/delete", categoriesRoutes.DeleteModuleFromCategory)
@@ -61,6 +66,7 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 	categories.GET("/to_user/:id", categoriesRoutes.GetCategoriesToUser)
 	categories.POST("/create", categoriesRoutes.InsertCategory)
 	categories.PUT("/rename/:id", categoriesRoutes.RenameCategory)
+	categories.PUT("/change_type/:id", categoriesRoutes.ChangeCategoryType)
 	categories.DELETE("/delete/:id", categoriesRoutes.DeleteCategory)
 
 	modules := v1.Group("/module")
@@ -69,6 +75,7 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 	modules.POST("/by_ids", moduleRoutes.GetModulesByIds)
 	modules.POST("/create", moduleRoutes.InsertModule)
 	modules.PUT("/rename/:id", moduleRoutes.RenameModule)
+	modules.PUT("/change_type/:id", moduleRoutes.ChangeModuleType)
 	modules.DELETE("/delete/:id", moduleRoutes.DeleteModule)
 
 	cards := v1.Group("/card")

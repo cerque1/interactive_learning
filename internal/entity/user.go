@@ -5,6 +5,6 @@ type User struct {
 	Login        string     `json:"login,omitempty"`
 	Name         string     `json:"name"`
 	PasswordHash string     `json:"-"`
-	Modules      []Module   `json:"modules"`
-	Categories   []Category `json:"categories"`
+	Modules      []Module   `json:"modules,omitempty"`
+	Categories   []Category `json:"categories,omitempty"`
 }

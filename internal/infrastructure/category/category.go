@@ -1,7 +1,9 @@
 package category
 
 import (
+	"errors"
 	"interactive_learning/internal/entity"
+	myerrors "interactive_learning/internal/errors"
 	httputils "interactive_learning/internal/http_utils"
 	"interactive_learning/internal/usecase"
 	"net/http"
@@ -28,11 +30,25 @@ func (cr *CategoryRoutes) GetCategoryById(c echo.Context) error {
 		})
 	}
 
-	categories, err := cr.CategoriesUC.GetCategoryById(id)
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
+			"message": "bad user id",
 		})
+	}
+
+	categories, err := cr.CategoriesUC.GetCategoryById(id, userId)
+	if err != nil {
+		switch {
+		case errors.Is(err, myerrors.ErrNotAvailable):
+			return c.JSON(http.StatusNotAcceptable, map[string]string{
+				"message": err.Error(),
+			})
+		default:
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": err.Error(),
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -45,13 +61,15 @@ func (cr *CategoryRoutes) GetCategoriesToUser(c echo.Context) error {
 	var id int
 	var err error
 
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
 	if idStr == "" {
-		id, err = strconv.Atoi(c.QueryParam("user_id"))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": "bad user id",
-			})
-		}
+		id = userId
 	} else {
 		id, err = strconv.Atoi(idStr)
 		if err != nil {
@@ -66,11 +84,18 @@ func (cr *CategoryRoutes) GetCategoriesToUser(c echo.Context) error {
 		isFull = false
 	}
 
-	categories, err := cr.CategoriesUC.GetCategoriesToUser(id, isFull)
+	categories, err := cr.CategoriesUC.GetCategoriesToUser(id, isFull, userId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		switch {
+		case errors.Is(err, myerrors.ErrNotAvailable):
+			return c.JSON(http.StatusNotAcceptable, map[string]string{
+				"message": err.Error(),
+			})
+		default:
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": err.Error(),
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -87,20 +112,73 @@ func (cr *CategoryRoutes) GetModulesToCategory(c echo.Context) error {
 		})
 	}
 
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
 	isFull, err := strconv.ParseBool(c.QueryParam("is_full"))
 	if err != nil {
 		isFull = false
 	}
 
-	modules, err := cr.CategoryModulesUC.GetModulesToCategory(id, isFull)
+	modules, err := cr.CategoryModulesUC.GetModulesToCategory(id, isFull, userId)
+	if err != nil {
+		switch {
+		case errors.Is(err, myerrors.ErrNotAvailable):
+			return c.JSON(http.StatusNotAcceptable, map[string]string{
+				"message": err.Error(),
+			})
+		default:
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": err.Error(),
+			})
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"modules": modules,
+	})
+}
+
+func (cr *CategoryRoutes) SearchCategories(c echo.Context) error {
+	name := c.QueryParam("name")
+	if name == "" || len([]byte(name)) < 2 {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": "empty or short name",
+		})
+	}
+
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": err.Error(),
+		})
+	}
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": err.Error(),
+		})
+	}
+
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
+	foundCategories, err := cr.CategoriesUC.GetCategoriesWithSimilarName(name, limit, offset, userId)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})
 	}
-
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"modules": modules,
+		"found_categories": foundCategories,
 	})
 }
 
@@ -191,6 +269,35 @@ func (cr *CategoryRoutes) RenameCategory(c echo.Context) error {
 		})
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
+}
+
+func (cr *CategoryRoutes) ChangeCategoryType(c echo.Context) error {
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+	categoryId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad category id",
+		})
+	}
+	var categoryType httputils.TypeFromReq
+	if err := c.Bind(&categoryType); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad category type",
+		})
+	}
+
+	err = cr.CategoriesUC.UpdateCategoryType(categoryId, categoryType.Type, userId)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.NoContent(http.StatusOK)
 }
 
 func (cr *CategoryRoutes) DeleteCategory(c echo.Context) error {

@@ -1,7 +1,9 @@
 package card
 
 import (
+	"errors"
 	"interactive_learning/internal/entity"
+	myerrors "interactive_learning/internal/errors"
 	"interactive_learning/internal/usecase"
 	"log"
 	"net/http"
@@ -27,11 +29,25 @@ func (cr *CardRoutes) GetCardsByModule(c echo.Context) error {
 		})
 	}
 
-	cards, err := cr.CardUC.GetCardsByModule(id)
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
+			"message": "bad user id",
 		})
+	}
+
+	cards, err := cr.CardUC.GetCardsByModule(id, userId)
+	if err != nil {
+		switch {
+		case errors.Is(err, myerrors.ErrNotAvailable):
+			return c.JSON(http.StatusNotAcceptable, map[string]string{
+				"message": err.Error(),
+			})
+		default:
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": err.Error(),
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{

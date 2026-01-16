@@ -1,7 +1,9 @@
 package module
 
 import (
+	"errors"
 	"interactive_learning/internal/entity"
+	myerrors "interactive_learning/internal/errors"
 	httputils "interactive_learning/internal/http_utils"
 	"interactive_learning/internal/usecase"
 	"net/http"
@@ -31,16 +33,30 @@ func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
 		})
 	}
 
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
 	isWithCards, err := strconv.ParseBool(c.QueryParam("with_cards"))
 	if err != nil {
 		isWithCards = false
 	}
 
-	modules, err := mr.ModuleUC.GetModulesByUser(id, isWithCards)
+	modules, err := mr.ModuleUC.GetModulesByUser(id, isWithCards, userId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		switch {
+		case errors.Is(err, myerrors.ErrNotAvailable):
+			return c.JSON(http.StatusNotAcceptable, map[string]string{
+				"message": err.Error(),
+			})
+		default:
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": err.Error(),
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -57,11 +73,25 @@ func (mr *ModuleRoutes) GetModuleById(c echo.Context) error {
 		})
 	}
 
-	module, err := mr.ModuleUC.GetModuleById(id)
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
+			"message": "bad user id",
 		})
+	}
+
+	module, err := mr.ModuleUC.GetModuleById(id, userId)
+	if err != nil {
+		switch {
+		case errors.Is(err, myerrors.ErrNotAvailable):
+			return c.JSON(http.StatusNotAcceptable, map[string]string{
+				"message": err.Error(),
+			})
+		default:
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": err.Error(),
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -77,19 +107,72 @@ func (mr *ModuleRoutes) GetModulesByIds(c echo.Context) error {
 		})
 	}
 
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
 	isWithCards, err := strconv.ParseBool(c.QueryParam("with_cards"))
 	if err != nil {
 		isWithCards = false
 	}
 
-	modules, err := mr.ModuleUC.GetModulesByIds(modulesIds.ModulesIds, isWithCards)
+	modules, err := mr.ModuleUC.GetModulesByIds(modulesIds.ModulesIds, isWithCards, userId)
+	if err != nil {
+		switch {
+		case errors.Is(err, myerrors.ErrNotAvailable):
+			return c.JSON(http.StatusNotAcceptable, map[string]string{
+				"message": err.Error(),
+			})
+		default:
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"message": err.Error(),
+			})
+		}
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"modules": modules,
+	})
+}
+
+func (mr *ModuleRoutes) SearchModules(c echo.Context) error {
+	name := c.QueryParam("name")
+	if name == "" || len([]byte(name)) < 2 {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": "empty or short name",
+		})
+	}
+
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": err.Error(),
+		})
+	}
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": err.Error(),
+		})
+	}
+
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+
+	foundModules, err := mr.ModuleUC.GetModulesWithSimilarName(name, limit, offset, userId)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
 		})
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"modules": modules,
+		"found_modules": foundModules,
 	})
 }
 
@@ -156,6 +239,35 @@ func (mr *ModuleRoutes) RenameModule(c echo.Context) error {
 		})
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
+}
+
+func (mr *ModuleRoutes) ChangeModuleType(c echo.Context) error {
+	userId, err := strconv.Atoi(c.QueryParam("user_id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad user id",
+		})
+	}
+	moduleId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad module id",
+		})
+	}
+	var moduleType httputils.TypeFromReq
+	if err := c.Bind(&moduleType); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "bad module type",
+		})
+	}
+
+	err = mr.ModuleUC.UpdateModuleType(moduleId, moduleType.Type, userId)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": err.Error(),
+		})
+	}
+	return c.NoContent(http.StatusOK)
 }
 
 func (mr *ModuleRoutes) DeleteModule(c echo.Context) error {

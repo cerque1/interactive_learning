@@ -42,6 +42,10 @@ type InsertCategoryModulesResultReq struct {
 	Time       string                  `json:"time"`
 }
 
+type TypeFromReq struct {
+	Type int `json:"type"`
+}
+
 func GetModulesCreateReqFromJson(body []byte) (ModuleCreateReq, error) {
 	var mod ModuleCreateReq
 	err := json.Unmarshal(body, &mod)

@@ -61,8 +61,47 @@ async function fetchModuleResult(resultId, token) {
   return await res.json();
 }
 
+async function fetchModuleInfo(moduleId, token) {
+  const res = await fetch(`http://localhost:8080/api/v1/module/${moduleId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (res.status === 401) {
+    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    throw new Error('Unauthorized');
+  }
+  if (res.status === 406) {
+    console.warn('Модуль недоступен:', moduleId);
+    return { module: { name: `Модуль ${moduleId} (недоступен)` } };
+  }
+  if (!res.ok) {
+    console.error('Ошибка загрузки информации о модуле:', res.status);
+    return null;
+  }
+  return await res.json();
+}
+
+async function fetchCategoryInfo(categoryId, token) {
+  const res = await fetch(`http://localhost:8080/api/v1/category/${categoryId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (res.status === 401) {
+    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    throw new Error('Unauthorized');
+  }
+  if (res.status === 406) {
+    console.warn('Категория недоступна:', categoryId);
+    return { category: { name: `Категория ${categoryId} (недоступна)` } };
+  }
+  if (!res.ok) {
+    console.error('Ошибка загрузки информации о категории:', res.status);
+    return null;
+  }
+  return await res.json();
+}
+
+
 async function loadResultDetails(resultData, token) {
-  const userRes = await fetch('http://localhost:8080/api/v1/user/me?is_full=t', {
+  const userRes = await fetch('http://localhost:8080/api/v1/user/me?is_full=f', {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (userRes.status === 401) {
@@ -70,15 +109,6 @@ async function loadResultDetails(resultData, token) {
     return;
   }
   const userData = await userRes.json();
-  
-  const modulesMap = {};
-  const categoriesMap = {};
-  if (userData.user.modules) {
-    userData.user.modules.forEach(m => modulesMap[m.id] = m.name);
-  }
-  if (userData.user.categories) {
-    userData.user.categories.forEach(c => categoriesMap[c.id] = c.name);
-  }
 
   document.getElementById('username').textContent = userData.user.name || 'Пользователь';
   document.getElementById('resultTime').textContent = formatDate(resultData.time);
@@ -87,15 +117,19 @@ async function loadResultDetails(resultData, token) {
   const isCategory = !!resultData.category_result_id;
   
   if (isCategory) {
-    title = categoriesMap[resultData.category_id] || `Категория ${resultData.category_id}`;
-    type = resultData.modules_res[0]?.result.type || 'test';
+    // Загружаем информацию о категории отдельным запросом
+    const categoryInfo = await fetchCategoryInfo(resultData.category_id, token);
+    title = categoryInfo?.category?.name || `Категория ${resultData.category_id}`;
     categoryName = title;
+    type = resultData.modules_res[0]?.result.type || 'test';
     resultIds = resultData.modules_res.map(m => m.result.result_id);
     document.getElementById('resultModule').style.display = 'none';
   } else {
-    title = modulesMap[resultData.module_id] || `Модуль ${resultData.module_id}`;
-    type = resultData.result.type;
+    // Загружаем информацию о модуле отдельным запросом
+    const moduleInfo = await fetchModuleInfo(resultData.module_id, token);
+    title = moduleInfo?.module?.name || `Модуль ${resultData.module_id}`;
     moduleName = title;
+    type = resultData.result.type;
     resultIds = [resultData.result.result_id];
     document.getElementById('resultCategory').style.display = 'none';
   }
@@ -109,10 +143,11 @@ async function loadResultDetails(resultData, token) {
   const stats = await loadCardStats(resultIds, token);
   renderChart(stats);
   
-  await renderDetailedResults(resultData, modulesMap, isCategory, token, type);
+  await renderDetailedResults(resultData, token, isCategory, type);
 }
 
-async function renderDetailedResults(resultData, modulesMap, isCategory, token, resultType) {
+// Обновленная функция renderDetailedResults - теперь получает названия модулей отдельно
+async function renderDetailedResults(resultData, token, isCategory, resultType) {
   const container = document.getElementById('detailed-results-container');
   if (!container) return;
 
@@ -125,7 +160,9 @@ async function renderDetailedResults(resultData, modulesMap, isCategory, token, 
   if (isCategory) {
     for (const moduleRes of resultData.modules_res) {
       const moduleId = moduleRes.module_id;
-      const moduleName = modulesMap[moduleId] || `Модуль ${moduleId}`;
+      // Загружаем информацию о модуле отдельным запросом
+      const moduleInfo = await fetchModuleInfo(moduleId, token);
+      const moduleName = moduleInfo?.module?.name || `Модуль ${moduleId}`;
       const moduleResultType = moduleRes.result.type || resultType;
       const resultId = moduleRes.result.result_id;
       
@@ -134,12 +171,14 @@ async function renderDetailedResults(resultData, modulesMap, isCategory, token, 
     }
   } else {
     const resultId = resultData.result.result_id;
-    const moduleName = modulesMap[resultData.module_id] || 'Результаты модуля';
+    // Название модуля уже получено в loadResultDetails
+    const moduleName = document.getElementById('moduleName').textContent || 'Результаты модуля';
     const cardsData = await fetchCardsResult(resultId, token);
     renderModuleSummary(container, moduleName, cardsData, resultType, resultId);
   }
 }
 
+// Остальные функции остаются без изменений
 function renderModuleSummary(container, moduleName, cardsData, resultType, resultId) {
   const cardsResult = cardsData.cards_results || [];
   const correct = cardsResult.filter(c => c.result === 'correct').length;
@@ -156,8 +195,8 @@ function renderModuleSummary(container, moduleName, cardsData, resultType, resul
       <div style="display: flex; flex-direction: column; flex: 1;">
         <h4 class="module-title">${moduleName}</h4>
         <div class="module-stats-row" style="margin-top: 8px;">
-          <div class="stat-badge correct">${correct} правильных</div>
-          <div class="stat-badge incorrect">${incorrect} неправильных</div>
+         <div class="stat-badge correct">${correct} правильных</div>
+         <div class="stat-badge incorrect">${incorrect} неправильных</div>
         </div>
       </div>
       <div class="module-stats-badge">
@@ -193,6 +232,7 @@ function renderModuleSummary(container, moduleName, cardsData, resultType, resul
   });
 }
 
+// Остальные функции (toggleModuleDetails, fetchCardDetails, renderCardDetail, fetchCardsResult, loadCardStats, renderChart, formatDate, initNavigation) остаются без изменений
 async function toggleModuleDetails(moduleDiv, resultId) {
   const token = localStorage.getItem('token');
   const moduleDetails = moduleDiv.querySelector('.module-details');
@@ -270,12 +310,12 @@ function renderCardDetail(container, cardResult, cardData, resultType, index) {
     <div class="card-content">
       <div class="card-fields-row">
         <div class="field-column term-column">
-          <div class="field-label">Термин (${card.term?.lang?.toUpperCase() || 'EN'})</div>
-          <div class="card-field compact">${card.term?.text || '—'}</div>
+         <div class="field-label">Термин (${card.term?.lang?.toUpperCase() || 'EN'})</div>
+         <div class="card-field compact">${card.term?.text || '—'}</div>
         </div>
         <div class="field-column definition-column">
-          <div class="field-label">Определение (${card.definition?.lang?.toUpperCase() || 'RU'})</div>
-          <div class="card-field compact">${card.definition?.text || '—'}</div>
+         <div class="field-label">Определение (${card.definition?.lang?.toUpperCase() || 'RU'})</div>
+         <div class="card-field compact">${card.definition?.text || '—'}</div>
         </div>
       </div>
     </div>

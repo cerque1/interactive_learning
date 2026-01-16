@@ -14,6 +14,25 @@ func NewModulesRepo(psql repo.PSQL) *ModulesRepo {
 	return &ModulesRepo{psql: psql}
 }
 
+func (mr *ModulesRepo) GetModulesWithSimilarName(name string, limit, offset int) ([]entity.Module, error) {
+	name = "%" + name + "%"
+	rows, err := mr.psql.Query("SELECT modules.id, modules.name, modules.owner_id, modules.type FROM modules WHERE name LIKE $1 LIMIT $2 OFFSET $3", name, limit, offset)
+	if err != nil {
+		return []entity.Module{}, err
+	}
+
+	modules := []entity.Module{}
+	for rows.Next() {
+		m := entity.Module{}
+		if err = rows.Scan(&m.Id, &m.Name, &m.OwnerId, &m.Type); err != nil {
+			return []entity.Module{}, err
+		}
+		modules = append(modules, m)
+	}
+
+	return modules, nil
+}
+
 func (mr *ModulesRepo) GetModulesByUser(userId int) ([]entity.Module, error) {
 	rows, err := mr.psql.Query("SELECT * FROM modules WHERE owner_id = $1", userId)
 	if err != nil {
@@ -78,6 +97,18 @@ func (mr *ModulesRepo) RenameModule(moduleId int, newName string) error {
 	result, err := mr.psql.Exec("UPDATE modules "+
 		"SET name = $1 "+
 		"WHERE id = $2", newName, moduleId)
+	if err != nil {
+		return err
+	} else if count, _ := result.RowsAffected(); count == 0 {
+		return errors.New("rename module error")
+	}
+	return nil
+}
+
+func (mr *ModulesRepo) UpdateModuleType(moduleId, newType int) error {
+	result, err := mr.psql.Exec("UPDATE modules "+
+		"SET type = $1 "+
+		"WHERE id = $2", newType, moduleId)
 	if err != nil {
 		return err
 	} else if count, _ := result.RowsAffected(); count == 0 {

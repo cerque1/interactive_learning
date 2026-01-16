@@ -34,6 +34,26 @@ func (cmr *CategoryModulesRepo) GetModulesToCategory(categoryId int) ([]entity.M
 	return modules, nil
 }
 
+func (cmr *CategoryModulesRepo) GetCategoriesContainsModule(moduleId int) ([]entity.Category, error) {
+	rows, err := cmr.psql.Query("SELECT id, name, owner_id, type FROM category_modules LEFT JOIN categories ON categories.id = category_modules.category_id "+
+		"WHERE module_id = $1", moduleId)
+	if err != nil {
+		return []entity.Category{}, err
+	}
+
+	categories := []entity.Category{}
+	for rows.Next() {
+		c := entity.Category{}
+		err := rows.Scan(&c.Id, &c.Name, &c.OwnerId, &c.Type)
+		if err != nil {
+			return []entity.Category{}, err
+		}
+		categories = append(categories, c)
+	}
+
+	return categories, nil
+}
+
 func (cmr *CategoryModulesRepo) InsertModulesToCategory(categoryId, moduleId int) error {
 	result, err := cmr.psql.Exec("INSERT INTO category_modules(category_id, module_id) "+
 		"VALUES($1, $2)", categoryId, moduleId)

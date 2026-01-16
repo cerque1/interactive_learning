@@ -3,11 +3,13 @@ package interactivelearning
 import (
 	"errors"
 	"interactive_learning/internal/entity"
+	myerrors "interactive_learning/internal/errors"
 	httputils "interactive_learning/internal/http_utils"
 	"interactive_learning/internal/repo"
 	"interactive_learning/internal/repo/persistent"
 	"interactive_learning/internal/uow"
 	"interactive_learning/internal/utils/tokengenerator"
+	"log"
 	"slices"
 	"sync"
 	"time"
@@ -79,8 +81,12 @@ func (u *UseCase) GetUserByLogin(login string) (entity.User, error) {
 	return u.usersRepoRead.GetUserByLogin(login)
 }
 
-func (u *UseCase) GetUserInfoById(userId int, isFull bool) (entity.User, error) {
-	user, err := u.usersRepoRead.GetUserInfoById(userId)
+func (u *UseCase) GetUsersWithSimilarName(name string, limit, offset int) ([]entity.User, error) {
+	return u.usersRepoRead.GetUsersWithSimilarName(name, limit, offset)
+}
+
+func (u *UseCase) GetUserInfoById(ownerId int, isFull bool, userId int) (entity.User, error) {
+	user, err := u.usersRepoRead.GetUserInfoById(ownerId)
 	if err != nil {
 		return entity.User{}, err
 	}
@@ -89,13 +95,13 @@ func (u *UseCase) GetUserInfoById(userId int, isFull bool) (entity.User, error) 
 		return user, nil
 	}
 
-	modules, err := u.GetModulesByUser(userId, false)
+	modules, err := u.GetModulesByUser(ownerId, true, userId)
 	if err != nil {
 		return entity.User{}, err
 	}
 	user.Modules = modules
 
-	categories, err := u.GetCategoriesToUser(userId, true)
+	categories, err := u.GetCategoriesToUser(ownerId, true, userId)
 	if err != nil {
 		return entity.User{}, err
 	}
@@ -160,7 +166,11 @@ func (u *UseCase) GetCardById(cardId int) (entity.Card, error) {
 	return u.cardsRepoRead.GetCardById(cardId)
 }
 
-func (u *UseCase) GetCardsByModule(moduleId int) ([]entity.Card, error) {
+func (u *UseCase) GetCardsByModule(moduleId int, userId int) ([]entity.Card, error) {
+	_, err := u.GetModuleById(moduleId, userId)
+	if err != nil { // нужно для проверки доступен ли модуль
+		return []entity.Card{}, err
+	}
 	return u.cardsRepoRead.GetCardsByModule(moduleId)
 }
 
@@ -315,10 +325,38 @@ func (u *UseCase) deleteCardsToParentModule(moduleId int, uow uow.UnitOfWork) er
 	return nil
 }
 
-func (u *UseCase) GetModulesByUser(userId int, withCards bool) ([]entity.Module, error) {
-	modules, err := u.moduleRepoRead.GetModulesByUser(userId)
+func (u *UseCase) GetModulesWithSimilarName(name string, limit, offset, userId int) ([]entity.Module, error) {
+	modules, err := u.moduleRepoRead.GetModulesWithSimilarName(name, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	publicModules := []entity.Module{}
+	for _, module := range modules {
+		if module.Type == entity.PrivateModule && module.OwnerId == userId {
+			publicModules = append(publicModules, module)
+		} else if module.Type == entity.PublicModule {
+			publicModules = append(publicModules, module)
+		}
+	}
+
+	return publicModules, nil
+}
+
+func (u *UseCase) GetModulesByUser(ownerId int, withCards bool, userId int) ([]entity.Module, error) {
+	modules, err := u.moduleRepoRead.GetModulesByUser(ownerId)
 	if err != nil {
 		return []entity.Module{}, err
+	}
+
+	if ownerId != userId {
+		publicModules := []entity.Module{}
+		for _, module := range modules {
+			if module.Type == entity.PublicModule {
+				publicModules = append(publicModules, module)
+			}
+		}
+		modules = publicModules
 	}
 
 	if !withCards {
@@ -336,11 +374,16 @@ func (u *UseCase) GetModulesByUser(userId int, withCards bool) ([]entity.Module,
 	return modules, nil
 }
 
-func (u *UseCase) GetModuleById(moduleId int) (entity.Module, error) {
+func (u *UseCase) GetModuleById(moduleId, userId int) (entity.Module, error) {
 	module, err := u.moduleRepoRead.GetModuleById(moduleId)
 	if err != nil {
 		return entity.Module{}, err
 	}
+
+	if module.Type == entity.PrivateModule && userId != module.OwnerId {
+		return entity.Module{}, myerrors.NewNotAvailableError("module", moduleId)
+	}
+
 	cards, err := u.cardsRepoRead.GetCardsByModule(moduleId)
 	if err != nil {
 		return entity.Module{}, err
@@ -349,13 +392,17 @@ func (u *UseCase) GetModuleById(moduleId int) (entity.Module, error) {
 	return module, nil
 }
 
-func (u *UseCase) GetModulesByIds(modulesIds []int, isFull bool) ([]entity.Module, error) {
+func (u *UseCase) GetModulesByIds(modulesIds []int, isFull bool, userId int) ([]entity.Module, error) {
 	modules := []entity.Module{}
 
 	for _, moduleId := range modulesIds {
 		module, err := u.moduleRepoRead.GetModuleById(moduleId)
 		if err != nil {
 			return []entity.Module{}, err
+		}
+
+		if module.Type == entity.PrivateModule && userId != module.OwnerId {
+			return []entity.Module{}, myerrors.NewNotAvailableError("module", moduleId)
 		}
 
 		if isFull {
@@ -432,6 +479,73 @@ func (u *UseCase) RenameModule(userId, moduleId int, newName string) error {
 	return uow.Commit()
 }
 
+func (u *UseCase) UpdateModuleType(moduleId, newType, userId int) error {
+	uow := u.unitOfWorkFactory()
+	if err := uow.Begin(); err != nil {
+		return err
+	}
+	defer uow.Rollback()
+
+	u.moduleMutex.Lock()
+	u.categoryMutex.Lock()
+	u.categoryModulesMutex.Lock()
+	defer func() {
+		u.moduleMutex.Unlock()
+		u.categoryMutex.Unlock()
+		u.categoryModulesMutex.Unlock()
+	}()
+
+	module, err := uow.GetModuleRepoReader().GetModuleById(moduleId)
+	if err != nil {
+		return err
+	}
+	if module.OwnerId != userId {
+		return errors.New("unaccessable module")
+	}
+
+	if module.Type == newType {
+		return errors.New("module already has this type")
+	}
+
+	err = uow.GetModuleRepoWriter().UpdateModuleType(moduleId, newType)
+	if err != nil {
+		return err
+	}
+
+	switch newType {
+	case entity.PrivateModule:
+		categories, err := uow.GetCategoryModulesRepoReader().GetCategoriesContainsModule(moduleId)
+		if err != nil {
+			return err
+		}
+		for _, category := range categories {
+			if category.Type == entity.PublicCategory {
+				category.Type = entity.PrivateCategory
+			}
+			category.Type++
+			err = uow.GetCategoryRepoWriter().UpdateCategoryType(category.Id, category.Type)
+			if err != nil {
+				return err
+			}
+		}
+	case entity.PublicModule:
+		categories, err := uow.GetCategoryModulesRepoReader().GetCategoriesContainsModule(moduleId)
+		if err != nil {
+			return err
+		}
+		for _, category := range categories {
+			err = uow.GetCategoryRepoWriter().TurnDownCategoryType(category.Id)
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		return errors.New("Invalid type")
+	}
+
+	return uow.Commit()
+}
+
 func (u *UseCase) DeleteModule(userId int, moduleId int) error {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
@@ -478,10 +592,38 @@ func (u *UseCase) DeleteModule(userId int, moduleId int) error {
 	return uow.Commit()
 }
 
-func (u *UseCase) GetCategoriesToUser(userId int, isFull bool) ([]entity.Category, error) {
-	categories, err := u.categoryRepoRead.GetCategoriesToUser(userId)
+func (u *UseCase) GetCategoriesWithSimilarName(name string, limit, offset, userId int) ([]entity.Category, error) {
+	categories, err := u.categoryRepoRead.GetCategoriesWithSimilarName(name, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	publicCategories := []entity.Category{}
+	for _, category := range categories {
+		if category.Type == entity.PublicCategory {
+			publicCategories = append(publicCategories, category)
+		} else if category.Type >= entity.PrivateCategory && category.OwnerId == userId {
+			publicCategories = append(publicCategories, category)
+		}
+	}
+
+	return publicCategories, nil
+}
+
+func (u *UseCase) GetCategoriesToUser(ownerId int, isFull bool, userId int) ([]entity.Category, error) {
+	categories, err := u.categoryRepoRead.GetCategoriesToUser(ownerId)
 	if err != nil {
 		return []entity.Category{}, err
+	}
+
+	if userId != ownerId {
+		publicCategories := []entity.Category{}
+		for _, category := range categories {
+			if category.Type == entity.PublicCategory {
+				publicCategories = append(publicCategories, category)
+			}
+		}
+		categories = publicCategories
 	}
 
 	if !isFull {
@@ -489,7 +631,7 @@ func (u *UseCase) GetCategoriesToUser(userId int, isFull bool) ([]entity.Categor
 	}
 
 	for i := range categories {
-		modules, err := u.GetModulesToCategory(categories[i].Id, true)
+		modules, err := u.GetModulesToCategory(categories[i].Id, true, userId)
 		if err != nil {
 			return []entity.Category{}, err
 		}
@@ -500,12 +642,17 @@ func (u *UseCase) GetCategoriesToUser(userId int, isFull bool) ([]entity.Categor
 	return categories, nil
 }
 
-func (u *UseCase) GetCategoryById(id int) (entity.Category, error) {
+func (u *UseCase) GetCategoryById(id int, userId int) (entity.Category, error) {
 	category, err := u.categoryRepoRead.GetCategoryById(id)
 	if err != nil {
 		return entity.Category{}, nil
 	}
-	modules, err := u.GetModulesToCategory(id, true)
+
+	if category.Type >= entity.PrivateCategory && category.OwnerId != userId {
+		return entity.Category{}, myerrors.NewNotAvailableError("category", category.Id)
+	}
+
+	modules, err := u.GetModulesToCategory(id, true, userId)
 	if err != nil {
 		return entity.Category{}, err
 	}
@@ -588,6 +735,41 @@ func (u *UseCase) RenameCategory(userId, categoryId int, newName string) error {
 	return uow.Commit()
 }
 
+func (u *UseCase) UpdateCategoryType(categoryId, newType, userId int) error {
+	uow := u.unitOfWorkFactory()
+	if err := uow.Begin(); err != nil {
+		return err
+	}
+	defer uow.Rollback()
+
+	category, err := uow.GetCategoryRepoReader().GetCategoryById(categoryId)
+	if err != nil {
+		return err
+	}
+
+	isOwner, err := u.isCategoryOwner(userId, categoryId, uow)
+	if err != nil {
+		return err
+	} else if !isOwner {
+		return errors.New("unavailable category")
+	}
+
+	if category.Type == newType {
+		return errors.New("category already has this type")
+	} else if newType == entity.PublicCategory && category.Type > entity.PrivateCategory {
+		return errors.New("It is impossible to set the type, the category contains a closed module.")
+	} else if newType > entity.PrivateCategory || newType < entity.PublicCategory {
+		return errors.New("Invalid type")
+	}
+
+	err = uow.GetCategoryRepoWriter().UpdateCategoryType(categoryId, newType)
+	if err != nil {
+		return err
+	}
+
+	return uow.Commit()
+}
+
 func (u *UseCase) DeleteCategory(userId int, id int) error {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
@@ -623,7 +805,16 @@ func (u *UseCase) DeleteCategory(userId int, id int) error {
 	return uow.Commit()
 }
 
-func (u *UseCase) GetModulesToCategory(categoryId int, isFull bool) ([]entity.Module, error) {
+func (u *UseCase) GetModulesToCategory(categoryId int, isFull bool, userId int) ([]entity.Module, error) {
+	category, err := u.categoryRepoRead.GetCategoryById(categoryId)
+	if err != nil {
+		return []entity.Module{}, err
+	}
+
+	if category.Type >= entity.PrivateCategory && category.OwnerId != userId {
+		return []entity.Module{}, myerrors.NewNotAvailableError("category", category.Id)
+	}
+
 	modules, err := u.categoryModulesRepoRead.GetModulesToCategory(categoryId)
 	if err != nil {
 		return []entity.Module{}, err
@@ -669,7 +860,7 @@ func (u *UseCase) insertModulesToCategory(userId, categoryId int, modulesIds []i
 		return errors.New("bad category id")
 	}
 	if category.OwnerId != userId {
-		return errors.New("unavailable category")
+		return myerrors.NewNotAvailableError("category", categoryId)
 	}
 
 	for _, moduleId := range modulesIds {
@@ -678,8 +869,29 @@ func (u *UseCase) insertModulesToCategory(userId, categoryId int, modulesIds []i
 		}
 	}
 
+	newCategoryType := category.Type
 	for _, moduleId := range modulesIds {
-		err := uow.GetCategoryModulesRepoWriter().InsertModulesToCategory(categoryId, moduleId)
+		module, err := uow.GetModuleRepoReader().GetModuleById(moduleId)
+		if err != nil {
+			return err
+		}
+
+		if module.Type == entity.PrivateModule {
+			if newCategoryType == entity.PublicCategory {
+				newCategoryType = entity.PrivateCategory
+			}
+			newCategoryType++
+			log.Print(newCategoryType)
+		}
+
+		err = uow.GetCategoryModulesRepoWriter().InsertModulesToCategory(categoryId, moduleId)
+		if err != nil {
+			return err
+		}
+	}
+
+	if newCategoryType != category.Type {
+		err = uow.GetCategoryRepoWriter().UpdateCategoryType(categoryId, newCategoryType)
 		if err != nil {
 			return err
 		}
@@ -709,6 +921,18 @@ func (u *UseCase) DeleteModuleFromCategory(userId, categoryId, moduleId int) err
 		return err
 	}
 
+	module, err := uow.GetModuleRepoReader().GetModuleById(moduleId)
+	if err != nil {
+		return err
+	}
+
+	if module.Type == entity.PrivateModule {
+		err = uow.GetCategoryRepoWriter().TurnDownCategoryType(categoryId)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = uow.GetCategoryModulesRepoWriter().DeleteModuleFromCategory(categoryId, moduleId)
 	if err != nil {
 		return err
@@ -731,6 +955,23 @@ func (u *UseCase) deleteModuleFromCategories(moduleId int, uow uow.UnitOfWork) e
 
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
+
+	module, err := uow.GetModuleRepoReader().GetModuleById(moduleId)
+	if err != nil {
+		return err
+	}
+	if module.Type == entity.PrivateModule {
+		categories, err := uow.GetCategoryModulesRepoReader().GetCategoriesContainsModule(moduleId)
+		if err != nil {
+			return err
+		}
+		for _, category := range categories {
+			err = uow.GetCategoryRepoWriter().TurnDownCategoryType(category.Id)
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	return uow.GetCategoryModulesRepoWriter().DeleteModuleFromCategories(moduleId)
 }

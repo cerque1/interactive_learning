@@ -8,67 +8,97 @@
 </head>
 <body>
 <header>
-  <button id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+  <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
   <h1>Заучка</h1>
   <div id="username">Загрузка...</div>
 </header>
 
 <main>
-  <!-- ПОИСК С КНОПКОЙ -->
+  <!-- ПОИСК -->
   <div class="search-section">
     <div class="search-container">
       <div class="search-input-wrapper">
-        <input type="text" id="search-input" placeholder="Поиск модулей, категорий, результатов..." />
+        <input type="text" id="search-input" placeholder="Поиск пользователей, категорий, модулей..." />
         <button id="search-button" class="search-button">Искать</button>
+        <button id="cancel-search" class="cancel-button" style="display: none;">Отменить</button>
       </div>
     </div>
   </div>
 
-  <!-- ПОПУЛЯРНЫЕ -->
-  <div class="popular-section">
-    <h2 class="popular-header">Популярные</h2>
-    <div class="popular-placeholder">
-      <p>Скоро здесь будут популярные модули и категории</p>
+  <!-- ОСНОВНОЙ КОНТЕНТ -->
+  <div id="main-content">
+    <!-- ПОПУЛЯРНЫЕ -->
+    <div class="popular-section">
+      <h2 class="popular-header">Популярные</h2>
+      <div class="popular-placeholder">
+        <p>Скоро здесь будут популярные модули и категории</p>
+      </div>
     </div>
+
+    <!-- МОДУЛИ -->
+    <section class="accordion-section">
+      <div class="accordion-header" id="modules-header">
+        <h2>Мои модули</h2>
+        <div class="accordion-arrow">▾</div>
+      </div>
+      <div id="modules-container" class="accordion-content cards-container"></div>
+      <div id="modules-empty" class="empty-message" style="display:none;">Модули отсутствуют</div>
+    </section>
+
+    <!-- КАТЕГОРИИ -->
+    <section class="accordion-section">
+      <div class="accordion-header" id="categories-header">
+        <h2>Мои категории</h2>
+        <div class="accordion-arrow">▾</div>
+      </div>
+      <div id="categories-container" class="accordion-content cards-container"></div>
+      <div id="categories-empty" class="empty-message" style="display:none;">Категории отсутствуют</div>
+    </section>
+
+    <!-- РЕЗУЛЬТАТЫ -->
+    <section class="accordion-section">
+      <div class="accordion-header" id="results-header">
+        <h2>Мои результаты</h2>
+        <div class="accordion-arrow">▾</div>
+      </div>
+      <div id="results-container" class="accordion-content cards-container"></div>
+      <div id="results-empty" class="empty-message">Результаты отсутствуют</div>
+    </section>
   </div>
 
-  <nav id="nav-panel">
-    <h2>Панель навигации</h2>
-    <button id="modules-btn">Модули</button>
-    <button id="categories-btn">Категории</button>
-    <button id="results-btn">Результаты</button>
-  </nav>  
+  <!-- РЕЗУЛЬТАТЫ ПОИСКА -->
+  <div id="search-results" style="display: none;">
+    <div class="search-results-container">
+      <!-- Блок пользователей -->
+      <div class="search-block" id="users-block">
+        <h3>Пользователи</h3>
+        <div id="users-container" class="cards-container"></div>
+        <button id="users-load-more" class="load-more-btn" style="display: none;">Ещё</button>
+      </div>
 
-  <!-- МОДУЛИ -->
-  <section class="accordion-section">
-    <div class="accordion-header" id="modules-header">
-      <h2>Мои модули</h2>
-      <div class="accordion-arrow">▾</div>
-    </div>
-    <div id="modules-container" class="accordion-content cards-container"></div>
-    <div id="modules-empty" class="empty-message" style="display:none;">Модули отсутствуют</div>
-  </section>
+      <!-- Блок категорий -->
+      <div class="search-block" id="categories-block">
+        <h3>Категории</h3>
+        <div id="search-categories-container" class="cards-container"></div>
+        <button id="categories-load-more" class="load-more-btn" style="display: none;">Ещё</button>
+      </div>
 
-  <!-- КАТЕГОРИИ -->
-  <section class="accordion-section">
-    <div class="accordion-header" id="categories-header">
-      <h2>Мои категории</h2>
-      <div class="accordion-arrow">▾</div>
+      <!-- Блок модулей -->
+      <div class="search-block" id="modules-block">
+        <h3>Модули</h3>
+        <div id="search-modules-container" class="cards-container"></div>
+        <button id="modules-load-more" class="load-more-btn" style="display: none;">Ещё</button>
+      </div>
     </div>
-    <div id="categories-container" class="accordion-content cards-container"></div>
-    <div id="categories-empty" class="empty-message" style="display:none;">Категории отсутствуют</div>
-  </section>
-
-  <!-- РЕЗУЛЬТАТЫ -->
-  <section class="accordion-section">
-    <div class="accordion-header" id="results-header">
-      <h2>Мои результаты</h2>
-      <div class="accordion-arrow">▾</div>
-    </div>
-    <div id="results-container" class="accordion-content cards-container"></div>
-    <div id="results-empty" class="empty-message">Результаты отсутствуют</div>
-  </section>
+  </div>
 </main>
+
+<nav id="nav-panel">
+  <h2>Навигация</h2>
+  <button id="modules-btn">Модули</button>
+  <button id="categories-btn">Категории</button>
+  <button id="results-btn">Результаты</button>
+</nav>
 
 <script src="main_script.js"></script>
 </body>

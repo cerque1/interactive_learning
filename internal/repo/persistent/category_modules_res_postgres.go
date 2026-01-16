@@ -66,7 +66,9 @@ func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]e
 
 		oneCategoryRes.Modules = append(oneCategoryRes.Modules, moduleRes)
 	}
-	categoryRes[oneCategoryRes.CategoryResultId] = oneCategoryRes
+	if !first {
+		categoryRes[oneCategoryRes.CategoryResultId] = oneCategoryRes
+	}
 
 	categoryResArray := []entity.CategoryModulesResult{}
 	for _, value := range categoryRes {
@@ -159,7 +161,9 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryOwner(categoryId, use
 
 		oneCategoryRes.Modules = append(oneCategoryRes.Modules, moduleRes)
 	}
-	categoryRes[oneCategoryRes.CategoryResultId] = oneCategoryRes
+	if !first {
+		categoryRes[oneCategoryRes.CategoryResultId] = oneCategoryRes
+	}
 
 	categoryResArray := []entity.CategoryModulesResult{}
 	for _, value := range categoryRes {

@@ -1,4 +1,7 @@
 // results_script.js
+let modulesCache = new Map();
+let categoriesCache = new Map();
+
 window.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -88,6 +91,80 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
+async function fetchModuleInfo(moduleId, token) {
+  const res = await fetch(`http://localhost:8080/api/v1/module/${moduleId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (res.status === 401) {
+    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    throw new Error('Unauthorized');
+  }
+  if (res.status === 406) {
+    console.warn('Модуль недоступен:', moduleId);
+    return { module: { name: `Модуль ${moduleId} (недоступен)` } };
+  }
+  if (!res.ok) {
+    console.error('Ошибка загрузки информации о модуле:', res.status);
+    return null;
+  }
+  return await res.json();
+}
+
+async function fetchCategoryInfo(categoryId, token) {
+  const res = await fetch(`http://localhost:8080/api/v1/category/${categoryId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (res.status === 401) {
+    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    throw new Error('Unauthorized');
+  }
+  if (res.status === 406) {
+    console.warn('Категория недоступна:', categoryId);
+    return { category: { name: `Категория ${categoryId} (недоступна)` } };
+  }
+  if (!res.ok) {
+    console.error('Ошибка загрузки информации о категории:', res.status);
+    return null;
+  }
+  return await res.json();
+}
+
+async function getModuleName(moduleId, token) {
+  if (modulesCache.has(moduleId)) {
+    return modulesCache.get(moduleId);
+  }
+  
+  try {
+    const moduleInfo = await fetchModuleInfo(moduleId, token);
+    const name = moduleInfo?.module?.name || `Модуль ${moduleId}`;
+    modulesCache.set(moduleId, name);
+    return name;
+  } catch (error) {
+    console.error('Ошибка получения названия модуля:', moduleId, error);
+    const fallbackName = `Модуль ${moduleId}`;
+    modulesCache.set(moduleId, fallbackName);
+    return fallbackName;
+  }
+}
+
+async function getCategoryName(categoryId, token) {
+  if (categoriesCache.has(categoryId)) {
+    return categoriesCache.get(categoryId);
+  }
+  
+  try {
+    const categoryInfo = await fetchCategoryInfo(categoryId, token);
+    const name = categoryInfo?.category?.name || `Категория ${categoryId}`;
+    categoriesCache.set(categoryId, name);
+    return name;
+  } catch (error) {
+    console.error('Ошибка получения названия категории:', categoryId, error);
+    const fallbackName = `Категория ${categoryId}`;
+    categoriesCache.set(categoryId, fallbackName);
+    return fallbackName;
+  }
+}
+
 async function loadResults(token, userId, modulesMap, categoriesMap) {
   try {
     const resultsRes = await fetch(`http://localhost:8080/api/v1/results/to_user/${userId}`, {
@@ -107,7 +184,10 @@ async function loadResults(token, userId, modulesMap, categoriesMap) {
     // Категории результаты
     if (resultsData.categories_results) {
       for (const catResult of resultsData.categories_results) {
-        const categoryName = categoriesMap[catResult.category_id] || await fetchEntityName('category', catResult.category_id, token);
+        let categoryName = categoriesMap[catResult.category_id];
+        if (!categoryName) {
+          categoryName = await getCategoryName(catResult.category_id, token);
+        }
         const firstModuleResult = catResult.modules_res[0]?.result;
         const resultType = firstModuleResult ? firstModuleResult.type : 'unknown';
         
@@ -116,7 +196,8 @@ async function loadResults(token, userId, modulesMap, categoriesMap) {
           name: categoryName,
           time: catResult.time,
           resultType: resultType,
-          id: catResult.category_result_id
+          id: catResult.category_result_id,
+          category_id: catResult.category_id
         });
       }
     }
@@ -124,13 +205,17 @@ async function loadResults(token, userId, modulesMap, categoriesMap) {
     // Модули результаты
     if (resultsData.modules_results) {
       for (const modResult of resultsData.modules_results) {
-        const moduleName = modulesMap[modResult.module_id] || await fetchEntityName('module', modResult.module_id, token);
+        let moduleName = modulesMap[modResult.module_id];
+        if (!moduleName) {
+          moduleName = await getModuleName(modResult.module_id, token);
+        }
         allResults.push({
           type: 'module',
           name: moduleName,
           time: modResult.time,
           resultType: modResult.result.type,
-          id: modResult.result.result_id
+          id: modResult.result.result_id,
+          module_id: modResult.module_id
         });
       }
     }
@@ -221,23 +306,6 @@ async function deleteResult(resultType, resultId, token) {
   }
 }
 
-async function fetchEntityName(entityType, entityId, token) {
-  try {
-    const url = `http://localhost:8080/api/v1/${entityType}/${entityId}`;
-    const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      return data.name || `ID ${entityId}`;
-    }
-  } catch (error) {
-    console.error(`Ошибка загрузки ${entityType}:`, error);
-  }
-  return `ID ${entityId}`;
-}
-
 function formatDate(isoString) {
   const date = new Date(isoString);
   return date.toLocaleString('ru-RU', {
@@ -255,31 +323,35 @@ function initNavigation() {
   const navPanel = document.getElementById('nav-panel');
   const navOverlay = document.getElementById('nav-panel-overlay');
   
-  navToggle.addEventListener('click', function() {
-    navPanel.classList.toggle('open');
-    navToggle.classList.toggle('open');
-    navOverlay.classList.toggle('open');
-  });
+  if (navToggle) {
+    navToggle.addEventListener('click', function() {
+      navPanel.classList.toggle('open');
+      navToggle.classList.toggle('open');
+      navOverlay.classList.toggle('open');
+    });
+  }
   
-  navOverlay.addEventListener('click', function() {
-    navPanel.classList.remove('open');
-    navToggle.classList.remove('open');
-    navOverlay.classList.remove('open');
-  });
+  if (navOverlay) {
+    navOverlay.addEventListener('click', function() {
+      navPanel.classList.remove('open');
+      navToggle.classList.remove('open');
+      navOverlay.classList.remove('open');
+    });
+  }
 
-  document.getElementById('main-btn').addEventListener('click', () => {
-    window.location.href = '/static/main.html';
-  });
-  
-  document.getElementById('modules-btn').addEventListener('click', () => {
-    window.location.href = '/static/modules.html';
-  });
-  
-  document.getElementById('categories-btn').addEventListener('click', () => {
-    window.location.href = '/static/categories.html';
-  });
-  
-  document.getElementById('results-btn').addEventListener('click', () => {
-    window.location.href = '/static/results.html';
+  const navButtons = {
+    'main-btn': '/static/main.html',
+    'modules-btn': '/static/modules.html',
+    'categories-btn': '/static/categories.html',
+    'results-btn': '/static/results.html'
+  };
+
+  Object.entries(navButtons).forEach(([id, url]) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', () => {
+        window.location.href = url;
+      });
+    }
   });
 }
