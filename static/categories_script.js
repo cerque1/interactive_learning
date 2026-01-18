@@ -2,8 +2,10 @@ let isEditMode = false;
 let currentCards = [];
 let windowMyId = null;
 
+const API_BASE_URL = window.location.origin;
+
 function loadUserName(token) {
-  return fetch('http://localhost:8080/api/v1/user/me?is_full=f', {
+  return fetch(`${API_BASE_URL}/api/v1/user/me?is_full=f`, {
     headers: { 'Authorization': `Bearer ${token}` }
   })
   .then(res => {
@@ -72,7 +74,7 @@ function handleDeleteCategory(categoryId, cardElement) {
 
   const token = localStorage.getItem('token');
   
-  fetch(`http://localhost:8080/api/v1/category/delete/${categoryId}`, {
+  fetch(`${API_BASE_URL}/api/v1/category/delete/${categoryId}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` }
   })
@@ -115,7 +117,7 @@ async function loadCategories(token, userId, myId) {
   if (userId) {
     userid = userId
   } 
-  const url = `http://localhost:8080/api/v1/category/to_user/${userid}`;
+  const url = `${API_BASE_URL}/api/v1/category/to_user/${userid}`;
 
   currentCards = [];
 
@@ -189,7 +191,7 @@ function setupEditMode() {
 }
 
 async function loadModules(token, userId) {
-  const url = `http://localhost:8080/api/v1/module/to_user/${userId}?with_cards=t`;
+  const url = `${API_BASE_URL}/api/v1/module/to_user/${userId}?with_cards=t`;
   
   try {
     const res = await fetch(url, {
@@ -316,7 +318,7 @@ function setupEditCategoryModal(token) {
       return;
     }
 
-    fetch(`http://localhost:8080/api/v1/category/rename/${currentEditingCategoryId}`, {
+    fetch(`${API_BASE_URL}/api/v1/category/rename/${currentEditingCategoryId}`, {
       method: 'PUT',
       headers: { 
         'Authorization': `Bearer ${token}`, 
@@ -409,7 +411,7 @@ function setupModal(token, userId, myId) {
     }
 
     try {
-      const res = await fetch('http://localhost:8080/api/v1/category/create', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/category/create`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

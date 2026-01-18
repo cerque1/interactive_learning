@@ -127,6 +127,11 @@ section h2 {
     box-shadow: 0 12px 30px rgba(0, 123, 251, 0.25);
 }
 
+.card.edit-mode {
+    box-shadow: 0 8px 25px rgba(0, 123, 251, 0.3);
+    border: 2px solid #007bfb;
+}
+
 .empty-message {
     text-align: center;
     color: #5AB9EA;
@@ -249,7 +254,8 @@ section h2 {
 #study-module-btn,
 #test-module-btn,
 #add-cards-btn,
-#edit-module-btn {
+#edit-module-btn,
+#toggle-module-type-btn {
     padding: 8px 16px;
     border-radius: 6px;
     border: none;
@@ -261,6 +267,7 @@ section h2 {
     display: inline-block;
     width: auto;
     margin: 0;
+    transition: all 0.3s ease;
 }
 
 .primary-btn,
@@ -268,7 +275,7 @@ section h2 {
 #test-module-btn,
 #add-cards-btn,
 #edit-module-btn,
-#test-module-btn {
+#toggle-module-type-btn {
     background-color: #007bfb;
     color: #fff;
 }
@@ -278,15 +285,39 @@ section h2 {
 #test-module-btn:hover:not(:disabled),
 #add-cards-btn:hover:not(:disabled),
 #edit-module-btn:hover:not(:disabled),
-#test-module-btn:hover:not(:disabled) {
+#toggle-module-type-btn:hover:not(:disabled) {
     background-color: #0056b3;
     transform: translateY(-1px);
+}
+
+/* Специальный стиль для кнопки типа модуля */
+#toggle-module-type-btn {
+    background: linear-gradient(135deg, #007bfb 0%, #0056b3 100%);
+    box-shadow: 0 4px 12px rgba(0, 123, 251, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+#toggle-module-type-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+#toggle-module-type-btn:hover::before {
+    left: 100%;
 }
 
 .primary-btn:disabled,
 .secondary-btn:disabled,
 #study-module-btn:disabled,
-#test-module-btn:disabled {
+#test-module-btn:disabled,
+#toggle-module-type-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
@@ -492,6 +523,25 @@ section h2 {
 #editCardModal .modal-content {
     width: 500px;
     max-width: 90vw;
+}
+
+/* Стили для уведомлений */
+.success-message {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-weight: 500;
+    max-width: 300px;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    font-family: inherit;
 }
 
 @media (max-width: 768px) {

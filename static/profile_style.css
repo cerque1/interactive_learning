@@ -1,4 +1,6 @@
-/* БАЗОВЫЕ СТИЛИ (как на главной) */
+/* profile_style.css - ПОЛНЫЙ ФАЙЛ СТИЛЕЙ */
+
+/* БАЗОВЫЕ СТИЛИ */
 * {
   box-sizing: border-box;
 }
@@ -13,6 +15,7 @@ body, html {
   flex-direction: column;
 }
 
+/* ХЕДЕР */
 header {
   position: fixed;
   top: 0;
@@ -48,6 +51,39 @@ header h1 {
 #username:hover {
   color: #8860D0;
   text-decoration: underline;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logout-header-btn {
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.3);
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logout-header-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.logout-header-btn:active {
+  transform: scale(0.95);
 }
 
 main {
@@ -122,7 +158,7 @@ section h2:hover {
   color: #5AB9EA;
 }
 
-/* КАРТОЧКИ (как на главной) */
+/* КАРТОЧКИ */
 .cards-container {
   display: flex;
   flex-wrap: wrap;
@@ -278,5 +314,15 @@ section h2:hover {
 @media (max-width: 480px) {
   .card {
     width: 100%;
+  }
+  
+  .header-right {
+    gap: 5px;
+  }
+  
+  .logout-header-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
 }

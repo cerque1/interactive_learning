@@ -4,6 +4,8 @@ let currentSearchQuery = '';
 let modulesCache = new Map();
 let categoriesCache = new Map();
 
+const API_BASE_URL = window.location.origin;
+
 // Состояние поиска
 let isSearchMode = false;
 let searchOffsets = {
@@ -29,7 +31,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   initSearch();
 
   try {
-    const res = await fetch('http://localhost:8080/api/v1/user/me?is_full=t', {
+    const res = await fetch(`${API_BASE_URL}/api/v1/user/me?is_full=t`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -65,7 +67,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function fetchModuleInfo(moduleId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/module/${moduleId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/module/${moduleId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (res.status === 401) {
@@ -84,7 +86,7 @@ async function fetchModuleInfo(moduleId, token) {
 }
 
 async function fetchCategoryInfo(categoryId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/category/${categoryId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/category/${categoryId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (res.status === 401) {
@@ -180,13 +182,13 @@ async function performSearch() {
     
     // Параллельные запросы
     const [usersRes, categoriesRes, modulesRes] = await Promise.all([
-      fetch(`http://localhost:8080/api/v1/search/users?name=${encodeURIComponent(query)}&limit=12&offset=0`, {
+      fetch(`${API_BASE_URL}/api/v1/search/users?name=${encodeURIComponent(query)}&limit=12&offset=0`, {
         headers: { 'Authorization': `Bearer ${token}` }
       }),
-      fetch(`http://localhost:8080/api/v1/search/categories?name=${encodeURIComponent(query)}&limit=12&offset=0`, {
+      fetch(`${API_BASE_URL}/api/v1/search/categories?name=${encodeURIComponent(query)}&limit=12&offset=0`, {
         headers: { 'Authorization': `Bearer ${token}` }
       }),
-      fetch(`http://localhost:8080/api/v1/search/modules?name=${encodeURIComponent(query)}&limit=12&offset=0`, {
+      fetch(`${API_BASE_URL}/api/v1/search/modules?name=${encodeURIComponent(query)}&limit=12&offset=0`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
     ]);
@@ -306,7 +308,7 @@ async function loadMore(type) {
   const offset = searchOffsets[type] + 12;
   
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/search/${type}s?name=${encodeURIComponent(currentSearchQuery)}&limit=12&offset=${offset}`, {
+    const res = await fetch(`${API_BASE_URL}/api/v1/search/${type}s?name=${encodeURIComponent(currentSearchQuery)}&limit=12&offset=${offset}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -368,7 +370,7 @@ async function toggleAccordion(headerId) {
 // Остальная оригинальная логика...
 async function loadAllResults(token, userId) {
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/results/to_user/${userId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/v1/results/to_user/${userId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) return;

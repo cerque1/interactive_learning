@@ -1,3 +1,5 @@
+const API_BASE_URL = window.location.origin;
+
 window.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -29,17 +31,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let currentUserId = null;
     let moduleOwnerId = null;
+    let moduleType = null; // 0 - закрытый, 1 - открытый
     let isEditMode = false;
 
     const addCardsBtn = document.getElementById('add-cards-btn');
     const editModuleBtn = document.getElementById('edit-module-btn');
+    const toggleModuleTypeBtn = document.getElementById('toggle-module-type-btn');
+    const toggleTypeText = document.getElementById('toggle-type-text');
 
     let userLoaded = false;
     let moduleLoaded = false;
 
     // Функция загрузки данных пользователя
     function fetchUser() {
-        return fetch('http://localhost:8080/api/v1/user/me?is_full=f', {
+        return fetch(`${API_BASE_URL}/api/v1/user/me?is_full=f`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => {
@@ -69,7 +74,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Функция загрузки данных модуля
     function fetchModule() {
-        return fetch(`http://localhost:8080/api/v1/module/${moduleId}`, {
+        return fetch(`${API_BASE_URL}/api/v1/module/${moduleId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => {
@@ -85,6 +90,7 @@ window.addEventListener('DOMContentLoaded', () => {
         .then(moduleData => {
             moduleData = moduleData.module;
             moduleOwnerId = moduleData.user_id || moduleData.owner_id;
+            moduleType = moduleData.type || 0; // Получаем тип модуля
 
             const moduleNameElem = document.getElementById('module-name');
             const cardsContainer = document.getElementById('cards-container');
@@ -120,6 +126,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             moduleLoaded = true;
             checkShowButtons();
+            updateModuleTypeButton();
         })
         .catch(() => {
             document.getElementById('module-name').textContent = 'Ошибка загрузки модуля';
@@ -143,6 +150,20 @@ window.addEventListener('DOMContentLoaded', () => {
             Number(currentUserId) === Number(moduleOwnerId)) {
             addCardsBtn.style.display = 'inline-block';
             editModuleBtn.style.display = 'inline-block';
+            toggleModuleTypeBtn.style.display = 'inline-block';
+        }
+    }
+
+    // Функция обновления кнопки типа модуля
+    function updateModuleTypeButton() {
+        if (!toggleModuleTypeBtn || moduleType === null) return;
+        
+        if (moduleType === 1) { // открытый
+            toggleTypeText.textContent = 'Сделать закрытым';
+            toggleModuleTypeBtn.title = 'Изменить модуль на закрытый (только для владельцев)';
+        } else { // закрытый
+            toggleTypeText.textContent = 'Сделать открытым';
+            toggleModuleTypeBtn.title = 'Изменить модуль на открытый (доступен всем)';
         }
     }
 
@@ -155,24 +176,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const notification = document.createElement('div');
         notification.className = 'success-message';
         notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            background: #28a745;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 10000;
-            font-weight: 500;
-            max-width: 300px;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.3s ease;
-            font-family: inherit;
-        `;
-        
         document.body.appendChild(notification);
         
         requestAnimationFrame(() => {
@@ -214,7 +217,7 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        fetch(`http://localhost:8080/api/v1/card/delete/${cardId}`, {
+        fetch(`${API_BASE_URL}/api/v1/card/delete/${cardId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -294,6 +297,50 @@ window.addEventListener('DOMContentLoaded', () => {
             });
             
             editModuleBtn.textContent = isEditMode ? 'Сохранить изменения' : 'Редактировать модуль';
+        });
+    }
+
+    // Обработчик кнопки изменения типа модуля
+    if (toggleModuleTypeBtn) {
+        toggleModuleTypeBtn.addEventListener('click', () => {
+            if (!(currentUserId && moduleOwnerId && Number(currentUserId) === Number(moduleOwnerId))) {
+                return;
+            }
+
+            const newType = moduleType === 1 ? 0 : 1;
+            
+            fetch(`${API_BASE_URL}/api/v1/module/change_type/${moduleId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type: newType })
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+                    return Promise.reject();
+                }
+                if (!res.ok) {
+                    if (res.status === 403) throw new Error('Нет прав для изменения типа модуля');
+                    if (res.status === 404) throw new Error('Модуль не найден');
+                    throw new Error('Ошибка изменения типа модуля');
+                }
+            })
+            .then(() => {
+                moduleType = newType;
+                updateModuleTypeButton();
+                showSuccessMessage(
+                    newType === 1 
+                        ? 'Модуль теперь открыт для всех пользователей' 
+                        : 'Модуль теперь закрыт (только для владельца)'
+                );
+            })
+            .catch(err => {
+                console.error('Ошибка изменения типа модуля:', err);
+                alert('Ошибка изменения типа модуля: ' + err.message);
+            });
         });
     }
 
@@ -490,7 +537,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            fetch(`http://localhost:8080/api/v1/card/insert_to_module`, {
+            fetch(`${API_BASE_URL}/api/v1/card/insert_to_module`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -625,7 +672,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            fetch(`http://localhost:8080/api/v1/card/update/${cardId}`, {
+            fetch(`${API_BASE_URL}/api/v1/card/update/${cardId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

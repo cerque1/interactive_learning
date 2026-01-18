@@ -86,7 +86,7 @@ func (cr *CategoryRepo) GetCategoryOwnerId(categoryId int) (int, error) {
 
 func (cr *CategoryRepo) InsertCategory(category entity.CategoryToCreate) error {
 	result, err := cr.psql.Exec("INSERT INTO categories(name, owner_id, type) "+
-		"VALUES($1, $2)", category.Name, category.OwnerId, category.Type)
+		"VALUES($1, $2, $3)", category.Name, category.OwnerId, category.Type)
 	if err != nil {
 		return err
 	} else if count, _ := result.RowsAffected(); count == 0 {

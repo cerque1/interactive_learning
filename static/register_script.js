@@ -2,6 +2,8 @@ const registerBtn = document.getElementById('registerBtn');
 const errorMsg = document.getElementById('errorMsg');
 const loginLink = document.getElementById('loginLink');
 
+const API_BASE_URL = window.location.origin;
+
 loginLink.addEventListener('click', () => {
   window.location.href = '/login';
 });
@@ -17,7 +19,7 @@ registerBtn.addEventListener('click', () => {
     return;
   }
 
-  const url = new URL('http://localhost:8080/api/auth/register');
+  const url = new URL(`${API_BASE_URL}/api/auth/register`);
   url.searchParams.append('name', name);
   url.searchParams.append('login', login);
   url.searchParams.append('password', password);
@@ -29,7 +31,7 @@ registerBtn.addEventListener('click', () => {
         if (data.token) {
           sessionStorage.setItem('token', data.token);
           localStorage.setItem('token', data.token);
-          window.location.href = 'http://localhost:8080/static/main.html';
+          window.location.href = `${API_BASE_URL}/static/main.html`;
         } else {
           errorMsg.textContent = 'Ошибка: отсутствует токен в ответе.';
         }

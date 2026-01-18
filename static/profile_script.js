@@ -1,3 +1,5 @@
+const API_BASE_URL = window.location.origin;
+
 window.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -19,7 +21,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const targetUserId = urlParams.get('user_id');
 
     // Запрашиваем данные текущего пользователя
-    const meRes = await fetch('http://localhost:8080/api/v1/user/me?is_full=t', {
+    const meRes = await fetch(`${API_BASE_URL}/api/v1/user/me?is_full=t`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -53,7 +55,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         isOwnProfile = true;
       } else {
         // Чужой профиль - запрашиваем данные конкретного пользователя
-        const targetRes = await fetch(`http://localhost:8080/api/v1/user/${targetUserId}?is_full=t`, {
+        const targetRes = await fetch(`${API_BASE_URL}/api/v1/user/${targetUserId}?is_full=t`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -125,7 +127,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 async function changePassword(token, newPassword) {
   try {
-    const res = await fetch('http://localhost:8080/api/v1/user/password', {
+    const res = await fetch(`${API_BASE_URL}/api/v1/user/password`, {
       method: 'PUT',
       headers: { 
         'Authorization': `Bearer ${token}`,
@@ -194,7 +196,7 @@ async function displayCategories(categories) {
 
 async function loadAndDisplayResults(token, userId, modulesMap, categoriesMap) {
   try {
-    const resultsRes = await fetch(`http://localhost:8080/api/v1/results/to_user/${userId}`, {
+    const resultsRes = await fetch(`${API_BASE_URL}/api/v1/results/to_user/${userId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -278,7 +280,7 @@ async function loadAndDisplayResults(token, userId, modulesMap, categoriesMap) {
 
 async function fetchEntityName(entityType, entityId, token) {
   try {
-    const url = `http://localhost:8080/api/v1/${entityType}/${entityId}`;
+    const url = `${API_BASE_URL}/api/v1/${entityType}/${entityId}`;
     const res = await fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -315,4 +317,16 @@ function initNavigation() {
       btn.onclick = () => window.location.href = url;
     }
   });
+
+  const logoutBtn = document.getElementById('logout-header-btn');
+  if (logoutBtn) {
+    logoutBtn.onclick = (e) => {
+      e.preventDefault();
+      if (confirm('Выйти из аккаунта?')) {
+        localStorage.removeItem('token');
+        window.location.href = '/static/login.html';
+      }
+    };
+  }
 }
+

@@ -1,0 +1,2 @@
+ALTER TABLE public.results
+DROP COLUMN IF EXISTS time;

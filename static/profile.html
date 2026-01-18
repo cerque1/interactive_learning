@@ -10,7 +10,11 @@
   <header>
     <button id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
     <h1>Заучка</h1>
-    <div id="username"></div>
+    <!-- ✅ КНОПКА ВЫХОДА В ХЕДЕРЕ РЯДОМ С ИМЕНЕМ ПОЛЬЗОВАТЕЛЯ -->
+    <div class="header-right">
+      <div id="username"></div>
+      <button id="logout-header-btn" class="logout-header-btn" title="Выход">🚪</button>
+    </div>
   </header>
 
   <main>
@@ -34,6 +38,7 @@
         </button>
       </div>
 
+      <!-- остальной контент без изменений -->
       <!-- МОИ МОДУЛИ -->
       <section class="content-section">
         <h2 id="modules-header">Мои модули</h2>

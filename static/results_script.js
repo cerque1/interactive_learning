@@ -2,6 +2,8 @@
 let modulesCache = new Map();
 let categoriesCache = new Map();
 
+const API_BASE_URL = window.location.origin;
+
 window.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -22,7 +24,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   
   try {
     // Загружаем данные пользователя
-    const userRes = await fetch('http://localhost:8080/api/v1/user/me?is_full=t', {
+    const userRes = await fetch(`${API_BASE_URL}/api/v1/user/me?is_full=t`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -92,7 +94,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function fetchModuleInfo(moduleId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/module/${moduleId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/module/${moduleId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (res.status === 401) {
@@ -111,7 +113,7 @@ async function fetchModuleInfo(moduleId, token) {
 }
 
 async function fetchCategoryInfo(categoryId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/category/${categoryId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/category/${categoryId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (res.status === 401) {
@@ -167,7 +169,7 @@ async function getCategoryName(categoryId, token) {
 
 async function loadResults(token, userId, modulesMap, categoriesMap) {
   try {
-    const resultsRes = await fetch(`http://localhost:8080/api/v1/results/to_user/${userId}`, {
+    const resultsRes = await fetch(`${API_BASE_URL}/api/v1/results/to_user/${userId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -286,8 +288,8 @@ function renderResultCard(result, token) {
 
 async function deleteResult(resultType, resultId, token) {
   const endpoint = resultType === 'category' 
-    ? `http://localhost:8080/api/v1/results/category_result/delete/${resultId}`
-    : `http://localhost:8080/api/v1/results/module_result/delete/${resultId}`;
+    ? `${API_BASE_URL}/api/v1/results/category_result/delete/${resultId}`
+    : `${API_BASE_URL}/api/v1/results/module_result/delete/${resultId}`;
     
   try {
     const res = await fetch(endpoint, {

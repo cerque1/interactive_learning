@@ -1,6 +1,8 @@
 let detailedResultsData = null;
 let moduleCardDetails = new Map();
 
+const API_BASE_URL = window.location.origin;
+
 window.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -38,7 +40,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function fetchCategoryResult(categoryResId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/results/category_result/${categoryResId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/results/category_result/${categoryResId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (res.status === 401) {
@@ -50,7 +52,7 @@ async function fetchCategoryResult(categoryResId, token) {
 }
 
 async function fetchModuleResult(resultId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/results/module_result/${resultId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/results/module_result/${resultId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (res.status === 401) {
@@ -62,7 +64,7 @@ async function fetchModuleResult(resultId, token) {
 }
 
 async function fetchModuleInfo(moduleId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/module/${moduleId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/module/${moduleId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (res.status === 401) {
@@ -81,7 +83,7 @@ async function fetchModuleInfo(moduleId, token) {
 }
 
 async function fetchCategoryInfo(categoryId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/category/${categoryId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/category/${categoryId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (res.status === 401) {
@@ -101,7 +103,7 @@ async function fetchCategoryInfo(categoryId, token) {
 
 
 async function loadResultDetails(resultData, token) {
-  const userRes = await fetch('http://localhost:8080/api/v1/user/me?is_full=f', {
+  const userRes = await fetch(`${API_BASE_URL}/api/v1/user/me?is_full=f`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (userRes.status === 401) {
@@ -274,7 +276,7 @@ async function toggleModuleDetails(moduleDiv, resultId) {
 }
 
 async function fetchCardDetails(cardId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/card/${cardId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/card/${cardId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   
@@ -325,7 +327,7 @@ function renderCardDetail(container, cardResult, cardData, resultType, index) {
 }
 
 async function fetchCardsResult(resultId, token) {
-  const res = await fetch(`http://localhost:8080/api/v1/results/cards_result/${resultId}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/results/cards_result/${resultId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   
@@ -347,7 +349,7 @@ async function loadCardStats(resultIds, token) {
   let totalIncorrect = 0;
   
   for (const resultId of resultIds) {
-    const res = await fetch(`http://localhost:8080/api/v1/results/cards_result/${resultId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/v1/results/cards_result/${resultId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     

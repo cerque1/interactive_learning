@@ -1,3 +1,5 @@
+const API_BASE_URL = window.location.origin;
+
 loginBtn.addEventListener('click', () => {
   errorMsg.textContent = '';
   const login = document.getElementById('login').value.trim();
@@ -8,7 +10,7 @@ loginBtn.addEventListener('click', () => {
     return;
   }
 
-  const url = new URL('http://localhost:8080/api/auth/login');
+  const url = new URL(`${API_BASE_URL}/api/auth/login`);
   url.searchParams.append('login', login);
   url.searchParams.append('password', password);
 

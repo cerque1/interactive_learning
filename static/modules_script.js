@@ -1,9 +1,11 @@
+const API_BASE_URL = window.location.origin;
+
 function getTypeAsInt(type) {
   return type === 'public' ? 1 : 0;
 }
 
 function loadUserName(token) {
-  return fetch('http://localhost:8080/api/v1/user/me?is_full=f', {
+  return fetch(`${API_BASE_URL}/api/v1/user/me?is_full=f`, {
     headers: { 'Authorization': `Bearer ${token}` }
   })
   .then(res => {
@@ -83,7 +85,7 @@ function handleDeleteModule(moduleId, cardElement) {
 
   const token = localStorage.getItem('token');
   
-  fetch(`http://localhost:8080/api/v1/module/delete/${moduleId}`, {
+  fetch(`${API_BASE_URL}/api/v1/module/delete/${moduleId}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` }
   })
@@ -123,7 +125,7 @@ function checkEmptyState() {
 
 function loadModules(token, userId, myId) {
   let user_id = myId || userId;
-  const url = `http://localhost:8080/api/v1/module/to_user/${user_id}`;
+  const url = `${API_BASE_URL}/api/v1/module/to_user/${user_id}`;
 
   currentCards = [];
 
@@ -237,7 +239,7 @@ function setupModal(token) {
       return;
     }
 
-    fetch('http://localhost:8080/api/v1/module/create', {
+    fetch(`${API_BASE_URL}/api/v1/module/create`, {
       method: 'POST',
       headers: { 
         'Authorization': `Bearer ${token}`, 
@@ -324,7 +326,7 @@ function setupEditModuleModal(token) {
       return;
     }
 
-    fetch(`http://localhost:8080/api/v1/module/rename/${currentEditingModuleId}`, {
+    fetch(`${API_BASE_URL}/api/v1/module/rename/${currentEditingModuleId}`, {
       method: 'PUT',
       headers: { 
         'Authorization': `Bearer ${token}`, 

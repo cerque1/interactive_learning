@@ -12,8 +12,10 @@ let isDragging = false;
 let isDown = false;
 let dragThreshold = 30;
 
+const API_BASE_URL = window.location.origin;
+
 function loadUserName(token) {
-    return fetch('http://localhost:8080/api/v1/user/me?is_full=f', {
+    return fetch(`${API_BASE_URL}/api/v1/user/me?is_full=f`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => {
@@ -321,7 +323,7 @@ async function showResults() {
         time = date.toISOString().replace('T', ' ').replace('Z', '');
 
         if (categoryId && modulesIds.length > 1) {
-            endpoint = 'http://localhost:8080/api/v1/results/category_result/insert';
+            endpoint = `${API_BASE_URL}/api/v1/results/category_result/insert`;
             
             const moduleCardsMap = {};
             moduleData.modules.forEach(module => {
@@ -351,7 +353,7 @@ async function showResults() {
                 modules_res: Object.values(modulesResults)
             };
         } else {
-            endpoint = 'http://localhost:8080/api/v1/results/module_result/insert';
+            endpoint = `${API_BASE_URL}/api/v1/results/module_result/insert`;
             
             const cardsResult = cards.map(card => ({
                 card_id: card.id,
@@ -406,7 +408,7 @@ function restartStudy() {
 
 async function loadModulesByIds(token, modulesIds) {
     try {
-        const response = await fetch('http://localhost:8080/api/v1/module/by_ids?with_cards=t', {
+        const response = await fetch(`${API_BASE_URL}/api/v1/module/by_ids?with_cards=t`, {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
