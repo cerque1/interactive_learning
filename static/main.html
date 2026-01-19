@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Заучка - Главная</title>
+  <link rel="stylesheet" href="general_style.css" />
   <link rel="stylesheet" href="main_style.css" />
 </head>
 <body>
@@ -30,9 +31,9 @@
     <!-- ПОПУЛЯРНЫЕ -->
     <div class="popular-section">
       <h2 class="popular-header">Популярные</h2>
-      <div class="popular-placeholder">
-        <p>Скоро здесь будут популярные модули и категории</p>
-      </div>
+      <div id="popular-container" class="cards-container"></div>
+      <div id="popular-empty" class="empty-message" style="display:none;">Популярных модулей и категорий пока нет</div>
+      <button id="popular-load-more" class="load-more-btn" style="display: none; grid-column: 1 / -1; margin-top: 20px;">Показать ещё</button>
     </div>
 
     <!-- МОДУЛИ -->

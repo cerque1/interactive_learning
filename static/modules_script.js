@@ -1,7 +1,7 @@
 const API_BASE_URL = window.location.origin;
 
 function getTypeAsInt(type) {
-  return type === 'public' ? 1 : 0;
+  return type === 'public' ? 0 : 1;
 }
 
 function loadUserName(token) {
@@ -34,13 +34,13 @@ function loadUserName(token) {
 let isEditMode = false;
 let currentCards = [];
 
-function createModuleCard(module) {
+function createModuleCard(module) { 
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.moduleId = module.id;
   card.style.cursor = 'pointer';
   
-  const typeText = module.type === 1 ? 'Открытый' : 'Приватный';
+  const typeText = module.type === 0 ? 'Открытый' : 'Приватный';
   
   card.innerHTML = `
     <div class="card-header">

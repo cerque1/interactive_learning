@@ -217,13 +217,18 @@ window.addEventListener('DOMContentLoaded', () => {
     if (userLoaded && categoryLoaded) {
       const isOwner = currentUserId && categoryOwnerId && currentUserId == categoryOwnerId;
       
-      if (addModuleBtn) addModuleBtn.style.display = isOwner ? 'inline-block' : 'none';
-      if (editCategoryBtn) editCategoryBtn.style.display = isOwner ? 'inline-block' : 'none';
-      if (toggleCategoryTypeBtn) toggleCategoryTypeBtn.style.display = isOwner ? 'inline-block' : 'none';
+      // Кнопки заучивания/тестирования
       if (studyModulesBtn) studyModulesBtn.style.display = categoryModules.length > 0 ? 'inline-block' : 'none';
       if (testModulesBtn) testModulesBtn.style.display = categoryModules.length > 0 ? 'inline-block' : 'none';
+      
+      // Блок редактирования целиком (только для владельца)
+      const editButtonsContainer = document.getElementById('edit-buttons-container');
+      if (editButtonsContainer) {
+        editButtonsContainer.style.display = isOwner ? 'flex' : 'none';
+      }
     }
   }
+
 
   function updateCategoryTypeButton() {
     if (!toggleCategoryTypeBtn || categoryType === null) return;
@@ -617,22 +622,22 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Редактирование категории
   if (editCategoryBtn) {
-    safeAddEventListener(editCategoryBtn, 'click', () => {
-      isEditMode = !isEditMode;
-      const modules = document.querySelectorAll('.card');
-      modules.forEach(module => {
-        const actions = module.querySelector('.module-actions');
-        if (isEditMode) {
-          module.classList.add('edit-mode');
-          if (actions) actions.classList.add('show');
-        } else {
-          module.classList.remove('edit-mode');
-          if (actions) actions.classList.remove('show');
-        }
-      });
-      editCategoryBtn.textContent = isEditMode ? 'Сохранить изменения' : 'Редактировать категорию';
+  safeAddEventListener(editCategoryBtn, 'click', () => {
+    isEditMode = !isEditMode;
+    const modules = document.querySelectorAll('.card');
+    modules.forEach(module => {
+      const actions = module.querySelector('.module-actions');
+      if (isEditMode) {
+        module.classList.add('edit-mode');
+        if (actions) actions.classList.add('show');
+      } else {
+        module.classList.remove('edit-mode');
+        if (actions) actions.classList.remove('show');
+      }
     });
-  }
+    editCategoryBtn.textContent = isEditMode ? 'Сохранить изменения' : 'Редактировать категорию';
+  });
+}
 
   // НОВАЯ КНОПКА: Изменение типа категории
   if (toggleCategoryTypeBtn) {

@@ -84,6 +84,30 @@ func (cr *CategoryRepo) GetCategoryOwnerId(categoryId int) (int, error) {
 	return ownerId, nil
 }
 
+func (cr *CategoryRepo) GetPopularCategories(limit, offset int) ([]entity.PopularCategory, error) {
+	rows, err := cr.psql.Query("SELECT categories.*, COUNT(DISTINCT category_res.owner) as count "+
+		"FROM categories INNER JOIN category_res ON categories.id = category_res.category_id "+
+		"WHERE categories.type = 0 AND time >= NOW() - INTERVAL '7 days' "+
+		"GROUP BY categories.id, category_res.owner "+
+		"ORDER BY count "+
+		"LIMIT $1 OFFSET $2;", limit, offset)
+	if err != nil {
+		return []entity.PopularCategory{}, nil
+	}
+
+	categories := []entity.PopularCategory{}
+	for rows.Next() {
+		c := entity.PopularCategory{}
+		err = rows.Scan(&c.Cat.Id, &c.Cat.Name, &c.Cat.OwnerId, &c.Cat.Type, &c.Count)
+		if err != nil {
+			return []entity.PopularCategory{}, nil
+		}
+		categories = append(categories, c)
+	}
+
+	return categories, nil
+}
+
 func (cr *CategoryRepo) InsertCategory(category entity.CategoryToCreate) error {
 	result, err := cr.psql.Exec("INSERT INTO categories(name, owner_id, type) "+
 		"VALUES($1, $2, $3)", category.Name, category.OwnerId, category.Type)

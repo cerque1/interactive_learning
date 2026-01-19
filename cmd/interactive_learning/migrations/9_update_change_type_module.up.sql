@@ -1,0 +1,12 @@
+ALTER TABLE public.modules
+DROP COLUMN IF EXISTS type;
+
+ALTER TABLE public.modules
+ADD COLUMN IF NOT EXISTS type int;
+
+UPDATE modules
+SET type = 0
+WHERE type IS NULL;
+
+ALTER TABLE modules
+ALTER COLUMN type SET NOT NULL;

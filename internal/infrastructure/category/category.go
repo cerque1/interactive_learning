@@ -143,6 +143,31 @@ func (cr *CategoryRoutes) GetModulesToCategory(c echo.Context) error {
 	})
 }
 
+func (cr *CategoryRoutes) GetPopularCategories(c echo.Context) error {
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": "error parse limit",
+		})
+	}
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": "error parse offset",
+		})
+	}
+
+	popularCategories, err := cr.CategoriesUC.GetPopularCategories(limit, offset)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"popular_categories": popularCategories,
+	})
+}
+
 func (cr *CategoryRoutes) SearchCategories(c echo.Context) error {
 	name := c.QueryParam("name")
 	if name == "" || len([]byte(name)) < 2 {

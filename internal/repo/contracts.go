@@ -43,6 +43,7 @@ type ModuleRepoRead interface {
 	GetModuleById(moduleId int) (entity.Module, error)
 	GetLastInsertedModuleId() (int, error)
 	GetModuleOwnerId(moduleId int) (int, error)
+	GetPopularModules(limit, offset int) ([]entity.PopularModule, error)
 }
 
 type ModuleRepoWrite interface {
@@ -58,6 +59,7 @@ type CategoryRepoRead interface {
 	GetCategoryById(id int) (entity.Category, error)
 	GetLastInsertedCategoryId() (int, error)
 	GetCategoryOwnerId(categoryId int) (int, error)
+	GetPopularCategories(limit, offset int) ([]entity.PopularCategory, error)
 }
 
 type CategoryRepoWrite interface {

@@ -137,6 +137,31 @@ func (mr *ModuleRoutes) GetModulesByIds(c echo.Context) error {
 	})
 }
 
+func (mr *ModuleRoutes) GetPopularModule(c echo.Context) error {
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": err.Error(),
+		})
+	}
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": err.Error(),
+		})
+	}
+
+	popularModules, err := mr.ModuleUC.GetPopularModules(limit, offset)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"message": err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"popular_modules": popularModules,
+	})
+}
+
 func (mr *ModuleRoutes) SearchModules(c echo.Context) error {
 	name := c.QueryParam("name")
 	if name == "" || len([]byte(name)) < 2 {

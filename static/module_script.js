@@ -33,6 +33,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let moduleOwnerId = null;
     let moduleType = null; // 0 - закрытый, 1 - открытый
     let isEditMode = false;
+    let moduleCards = []; // ✅ Храним карточки для логики кнопок
 
     const addCardsBtn = document.getElementById('add-cards-btn');
     const editModuleBtn = document.getElementById('edit-module-btn');
@@ -90,7 +91,8 @@ window.addEventListener('DOMContentLoaded', () => {
         .then(moduleData => {
             moduleData = moduleData.module;
             moduleOwnerId = moduleData.user_id || moduleData.owner_id;
-            moduleType = moduleData.type || 0; // Получаем тип модуля
+            moduleType = moduleData.type || 0;
+            moduleCards = moduleData.cards || []; // ✅ Сохраняем карточки
 
             const moduleNameElem = document.getElementById('module-name');
             const cardsContainer = document.getElementById('cards-container');
@@ -136,36 +138,35 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Функция проверки и показа кнопок
+    // ✅ НОВАЯ ФУНКЦИЯ checkShowButtons (как в категории)
     function checkShowButtons() {
-        console.log('Проверка кнопок:', {
-            userLoaded,
-            moduleLoaded,
-            currentUserId,
-            moduleOwnerId,
-            isOwner: currentUserId && moduleOwnerId && Number(currentUserId) === Number(moduleOwnerId)
-        });
-
-        if (userLoaded && moduleLoaded && currentUserId && moduleOwnerId && 
-            Number(currentUserId) === Number(moduleOwnerId)) {
-            addCardsBtn.style.display = 'inline-block';
-            editModuleBtn.style.display = 'inline-block';
-            toggleModuleTypeBtn.style.display = 'inline-block';
+        if (userLoaded && moduleLoaded) {
+            const isOwner = currentUserId && moduleOwnerId && currentUserId == moduleOwnerId;
+            
+            // Кнопки заучивания/тестирования (показывать если есть карточки)
+            if (studyModuleBtn) studyModuleBtn.style.display = moduleCards.length > 0 ? 'inline-block' : 'none';
+            if (testModuleBtn) testModuleBtn.style.display = moduleCards.length > 0 ? 'inline-block' : 'none';
+            
+            // Блок редактирования целиком (только для владельца)
+            const editButtonsContainer = document.getElementById('edit-buttons-container');
+            if (editButtonsContainer) {
+                editButtonsContainer.style.display = isOwner ? 'flex' : 'none';
+            }
         }
     }
 
     // Функция обновления кнопки типа модуля
-    function updateModuleTypeButton() {
-        if (!toggleModuleTypeBtn || moduleType === null) return;
+    function updateModuleTypeButton() {  
+        if (!toggleModuleTypeBtn || moduleType === null) return; 
         
-        if (moduleType === 1) { // открытый
-            toggleTypeText.textContent = 'Сделать закрытым';
-            toggleModuleTypeBtn.title = 'Изменить модуль на закрытый (только для владельцев)';
-        } else { // закрытый
-            toggleTypeText.textContent = 'Сделать открытым';
-            toggleModuleTypeBtn.title = 'Изменить модуль на открытый (доступен всем)';
-        }
-    }
+        if (moduleType === 0) { // публичный 
+            toggleTypeText.textContent = 'Сделать приватным'; 
+            toggleModuleTypeBtn.title = 'Изменить модуль на приватный (только для владельцев)'; 
+        } else { // приватный 
+            toggleTypeText.textContent = 'Сделать публичным'; 
+            toggleModuleTypeBtn.title = 'Изменить модуль на публичный (доступен всем)'; 
+        } 
+    } 
 
     // Запускаем параллельные запросы
     fetchUser();
@@ -205,6 +206,12 @@ window.addEventListener('DOMContentLoaded', () => {
             cardsContainer.style.display = 'flex';
             emptyMessage.style.display = 'none';
         }
+        
+        // ✅ Обновляем moduleCards для корректной работы кнопок
+        moduleCards = Array.from(remainingCards).map(card => ({
+            id: parseInt(card.dataset.cardId)
+        }));
+        checkShowButtons(); // Перепроверяем видимость кнопок
     }
 
     // Обработчик удаления карточки
@@ -307,7 +314,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const newType = moduleType === 1 ? 0 : 1;
+            const newType = moduleType === 0 ? 1 : 0;
             
             fetch(`${API_BASE_URL}/api/v1/module/change_type/${moduleId}`, {
                 method: 'PUT',
@@ -331,11 +338,11 @@ window.addEventListener('DOMContentLoaded', () => {
             .then(() => {
                 moduleType = newType;
                 updateModuleTypeButton();
-                showSuccessMessage(
-                    newType === 1 
-                        ? 'Модуль теперь открыт для всех пользователей' 
-                        : 'Модуль теперь закрыт (только для владельца)'
-                );
+                showSuccessMessage(  
+                    newType === 0 
+                        ? 'Модуль теперь публичный (доступен всем)' 
+                        : 'Модуль теперь приватный (только для владельца)' 
+                ); 
             })
             .catch(err => {
                 console.error('Ошибка изменения типа модуля:', err);
@@ -600,6 +607,10 @@ window.addEventListener('DOMContentLoaded', () => {
                         cardElem.style.transform = 'translateY(0)';
                     });
                 });
+                
+                // ✅ Обновляем moduleCards после добавления
+                moduleCards = moduleCards.concat(newIds.map(id => ({ id })));
+                checkShowButtons();
                 
                 showSuccessMessage(`${newIds.length} карточек${newIds.length === 1 ? 'а' : 'ек'} успешно добавлено${newIds.length === 1 ? '' : 'ы'}`);
             })

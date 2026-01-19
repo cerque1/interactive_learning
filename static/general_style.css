@@ -1,0 +1,335 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Базовые стили body/html */
+body, html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e0e8ff 50%, #f8fbff 100%);
+  color: #1e293b;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* COMMON HEADER */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: #007bfb;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1002;
+  box-shadow: 0 2px 10px rgba(0, 123, 251, 0.3);
+  transition: padding-left 0.3s ease;
+}
+
+header h1,
+.header-link {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.8em;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  pointer-events: none;
+  text-decoration: none;
+}
+
+#username {
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+#username:hover {
+  color: white;
+  background: rgba(255,255,255,0.25);
+  transform: translateY(-2px);
+}
+
+/* NAVIGATION - как в main_style.css */
+#nav-toggle {
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
+  color: white;
+  font-size: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#nav-toggle:hover {
+  background: rgba(255,255,255,0.25);
+  transform: scale(1.05);
+}
+
+#nav-panel {
+  position: fixed;
+  top: 80px;
+  left: -300px;
+  width: 280px;
+  height: calc(100vh - 80px);
+  background: linear-gradient(135deg, #007bfb, #1e40af);
+  padding: 30px 20px;
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1003;
+  border-radius: 0 20px 20px 0;
+  box-shadow: 4px 0 30px rgba(0,123,251,0.3);
+}
+
+#nav-panel.open {
+  left: 0;
+}
+
+#nav-panel-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+}
+
+#nav-panel-overlay.open {
+  display: block;
+}
+
+#nav-panel h2 {
+  margin: 0 0 25px 0;
+  color: white;
+  font-weight: 700;
+  font-size: 1.3em;
+}
+
+#nav-panel button {
+  width: 100%;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-weight: 600;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  margin-bottom: 12px;
+}
+
+#nav-panel button:hover {
+  background: rgba(255,255,255,0.3);
+  transform: translateX(8px);
+}
+
+/* COMMON MAIN */
+main {
+  padding: 120px 20px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  flex-grow: 1;
+}
+
+/* COMMON BUTTONS - БЕЗ ГРАДИЕНТА */
+.btn, .btn-primary, .primary-btn, .create-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.btn-primary, .primary-btn, .create-btn {
+  background-color: #007bfb;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 123, 251, 0.3);
+}
+
+.btn-primary:hover:not(:disabled), .primary-btn:hover, .create-btn:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 123, 251, 0.4);
+}
+
+.btn-secondary {
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
+.btn-secondary:hover {
+  background-color: #e9ecef;
+  transform: translateY(-1px);
+}
+
+/* COMMON CARDS */
+.card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 25px rgba(86,122,190,0.15);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 50px rgba(86,122,190,0.3);
+  border-color: rgba(0,123,251,0.3);
+}
+
+.card-title {
+  font-weight: 700;
+  font-size: 1.2em;
+  margin-bottom: 8px;
+  color: #1e293b;
+}
+
+/* COMMON MODAL */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid #e8f0ff;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #2f4f9c;
+  font-size: 1.4em;
+  font-weight: 700;
+}
+
+.close {
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #999;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close:hover {
+  color: #007bfb;
+  background-color: #f0f8ff;
+}
+
+.modal-body {
+  padding: 0 28px 24px;
+}
+
+.input-group {
+  margin-top: 10px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2f4f9c;
+  font-size: 14px;
+}
+
+.input-group input,
+.input-group select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e8f0ff;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background-color: #fafbff;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: #007bfb;
+  box-shadow: 0 0 0 3px rgba(0, 123, 251, 0.1);
+  background-color: white;
+}
+
+.modal-footer {
+  padding: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  border-top: 1px solid #e8f0ff;
+}
+
+/* COMMON RESPONSIVE */
+@media (max-width: 768px) {
+  main {
+    padding: 110px 16px 20px;
+  }
+}

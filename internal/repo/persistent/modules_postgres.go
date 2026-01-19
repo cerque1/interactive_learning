@@ -81,6 +81,30 @@ func (mr *ModulesRepo) GetModuleOwnerId(moduleId int) (int, error) {
 	return id, nil
 }
 
+func (mr *ModulesRepo) GetPopularModules(limit, offset int) ([]entity.PopularModule, error) {
+	rows, err := mr.psql.Query("SELECT modules.*, COUNT(DISTINCT modules_res.owner) as count "+
+		"FROM modules INNER JOIN modules_res ON modules.id = modules_res.module_id "+
+		"WHERE modules.type = 0 AND time >= NOW() - INTERVAL '7 days' "+
+		"GROUP BY modules.id, modules_res.owner "+
+		"ORDER BY count "+
+		"LIMIT $1 OFFSET $2;", limit, offset)
+	if err != nil {
+		return []entity.PopularModule{}, nil
+	}
+
+	modules := []entity.PopularModule{}
+	for rows.Next() {
+		m := entity.PopularModule{}
+		err = rows.Scan(&m.Mod.Id, &m.Mod.Name, &m.Mod.OwnerId, &m.Mod.Type, &m.Count)
+		if err != nil {
+			return []entity.PopularModule{}, nil
+		}
+		modules = append(modules, m)
+	}
+
+	return modules, nil
+}
+
 func (mr *ModulesRepo) InsertModule(module entity.ModuleToCreate) error {
 	result, err := mr.psql.Exec("INSERT INTO modules(name, owner_id, type) "+
 		"VALUES($1, $2, $3)", module.Name, module.OwnerId, module.Type)

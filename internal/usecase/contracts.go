@@ -35,6 +35,7 @@ type Modules interface {
 	GetModuleById(moduleId, userId int) (entity.Module, error)
 	GetModulesByIds(modulesIds []int, isFull bool, userId int) ([]entity.Module, error)
 	GetModuleOwnerId(moduleId int) (int, error)
+	GetPopularModules(limit, offset int) ([]entity.PopularModule, error)
 	InsertModule(module entity.ModuleToCreate) (int, []int, error)
 	RenameModule(userId, moduleId int, newName string) error
 	UpdateModuleType(moduleId, newType, userId int) error
@@ -45,6 +46,7 @@ type Categories interface {
 	GetCategoriesWithSimilarName(name string, limit, offset, userId int) ([]entity.Category, error)
 	GetCategoriesToUser(ownerId int, isFull bool, userId int) ([]entity.Category, error)
 	GetCategoryById(id, userId int) (entity.Category, error)
+	GetPopularCategories(limit, offset int) ([]entity.PopularCategory, error)
 	InsertCategory(category entity.CategoryToCreate) (int, error)
 	RenameCategory(userId, categoryId int, newName string) error
 	UpdateCategoryType(categoryId, newType, userId int) error

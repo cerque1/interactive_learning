@@ -1,64 +1,84 @@
-body, html {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #ffffff;
-  color: #2f4f9c;
-  min-height: 100vh;
+/* Полный category_style.css - вся страница категории */
+
+main {
+  margin: 0 auto;
+  padding: 120px 20px 40px;
   display: flex;
   flex-direction: column;
 }
 
-header {
-  position: fixed;
+.buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.button-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.4));
+  border: 1px solid rgba(0,123,251,0.15);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(86,122,190,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.button-section::before {
+  content: '';
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  background-color: #007bfb;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between; 
-  align-items: center;
-  z-index: 1002;     
-  box-shadow: 0 2px 10px rgba(0, 123, 251, 0.3);
+  height: 4px;
+  background: linear-gradient(90deg, #007bfb, #5AB9EA, #007bfb);
+  border-radius: 16px 16px 0 0;
 }
 
-header h1 {
+.button-section.study-section::after {
+  content: '🎓';
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 0;
+  top: 20px;
+  right: 24px;
+  font-size: 24px;
+  opacity: 0.3;
+}
+
+.button-section.edit-section::after {
+  content: '⚙️';
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  font-size: 24px;
+  opacity: 0.3;
+}
+
+.button-section-header {
   font-weight: 700;
-  color: white;
+  font-size: 1em;
+  color: #154273;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-#username {
-  order: 1;
-  font-weight: 600;
-  color: #C1C8E4;
-  cursor: pointer;
-  user-select: none;
-  transition: color 0.3s ease;
-}
-
-#username:hover {
-  color: #8860D0;
-  text-decoration: underline;
-}
-
-main {
-  margin-top: 80px;
-  padding: 20px;
-  flex-grow: 1;
-}
-
-section {
-  margin-bottom: 32px;
+.study-test-buttons,
+.edit-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 section h2 {
   font-weight: 700;
-  margin-bottom: 16px;
+  margin: 0 0 24px 0;
   color: #007bfb;
+  font-size: 1.8em;
 }
 
 .cards-container {
@@ -68,33 +88,19 @@ section h2 {
 }
 
 .card {
+  width: 190px;
+  min-height: 120px;
   background-color: #bfdeff;
   border-radius: 12px;
   padding: 20px;
-  width: 190px;
-  min-height: 80px;
+  padding-bottom: 52px;
   box-shadow: 0 4px 8px rgba(86, 122, 190, 0.3);
+  position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   color: #154273;
-  cursor: default;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card.edit-mode {
-  padding-bottom: 12px;
-}
-
-.card-title {
-  font-weight: 700;
-  font-size: 1.1em;
-  margin-bottom: 8px;
-}
-
-.card-count {
-  font-size: 0.95em;
-  color: #5AB9EA;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:hover {
@@ -102,132 +108,37 @@ section h2 {
   box-shadow: 0 8px 20px rgba(86, 122, 190, 0.4);
 }
 
+.card-title {
+  margin-top: 24px;
+  font-weight: 700;
+  font-size: 1.1em;
+  margin-bottom: 8px;
+  color: #154273;
+  line-height: 1.3;
+}
+
+.card-count {
+  font-size: 0.95em;
+  color: #5AB9EA;
+  margin-bottom: 4px;
+}
+
 .empty-message {
   text-align: center;
   color: #5AB9EA;
   font-style: italic;
   font-size: 1.1em;
+  padding: 40px 20px;
   user-select: none;
 }
 
-#nav-toggle {
-  order: -1;
-  position: relative;
-  top: auto;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-  user-select: none;
-  z-index: 1001;
-  transition: left 0.3s ease;
-}
-
-#nav-toggle.open {
-  left: calc(20% + 20px);
-}
-
-#nav-panel {
-  position: fixed;
-  top: 0;
-  left: -20%;
-  width: 20%;
-  height: 100%;
-  background-color: #007bfb;
-  padding: 10px 20px;
-  box-sizing: border-box;
-  transition: left 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  z-index: 1002;
-}
-
-#nav-panel.open {
-  left: 0;
-}
-
-#nav-panel h2 {
-  margin: 0;
-  color: white;
-  padding: 12px;
-  font-weight: 700;
-}
-
-#nav-panel button {
-  background-color: #5AB9EA;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-#nav-panel button:hover {
-  background-color: #8860D0;
-}
-
-/* Кнопки */
-.primary-btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  min-height: 40px;
-  box-sizing: border-box;
-  background-color: #007bfb;
-  color: #fff;
-  margin-bottom: 16px;
-}
-
-.primary-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Добавьте после стилей primary-btn */
-#toggle-category-type-btn {
-  background: linear-gradient(135deg, #007bfb 0%, #0056b3 100%);
-  box-shadow: 0 4px 12px rgba(0, 123, 251, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-#toggle-category-type-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  transition: left 0.5s;
-}
-
-#toggle-category-type-btn:hover::before {
-  left: 100%;
-}
-
-#toggle-category-type-btn:hover:not(:disabled) {
-  background-color: #0056b3;
-  transform: translateY(-1px);
-}
-
-#toggle-category-type-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Кнопки действий модулей */
 .module-actions {
   display: none;
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
   gap: 8px;
-  margin-top: 8px;
+  z-index: 10;
 }
 
 .module-actions.show {
@@ -235,13 +146,13 @@ section h2 {
 }
 
 .action-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
   color: #5674b9;
-  font-size: 12px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -254,11 +165,39 @@ section h2 {
   background: #ffffff;
   transform: scale(1.05);
   box-shadow: 0 3px 8px rgba(0, 123, 251, 0.3);
+  color: #007bfb;
 }
 
 .action-btn.delete:hover {
   color: #dc3545;
-  background: rgba(220, 53, 69, 0.15);
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.card.edit-mode::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 123, 251, 0.05);
+  border-radius: 12px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.card.edit-mode:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(86, 122, 190, 0.35);
+}
+
+.error-message {
+  background: #ffebee;
+  color: #c62828;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 14px;
 }
 
 /* Модальные окна */
@@ -373,20 +312,6 @@ section h2 {
   gap: 12px;
 }
 
-#confirm-add-modules:disabled,
-#start-studying-btn:disabled,
-#start-testing-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.buttons-container {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-
 .modal-buttons {
   display: flex;
   gap: 12px;
@@ -394,45 +319,29 @@ section h2 {
 }
 
 .secondary-btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid #007bfb;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  min-height: 40px;
-  box-sizing: border-box;
-  background-color: transparent;
-  color: #007bfb;
-  transition: all 0.2s ease;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    min-height: 40px;
+    box-sizing: border-box;
+    display: inline-block;
+    width: auto;
+    margin: 0;
+    transition: all 0.3s ease;
+    background-color: #007bfb;
+    color: #fff;
 }
 
-.secondary-btn:hover {
-  background-color: #007bfb;
-  color: white;
+.secondary-btn {
+    background-color: #bfdeff;
+    color: #154273;
 }
 
-/* Адаптивность */
-@media (max-width: 768px) {
-  .cards-container {
-    justify-content: center;
-  }
-
-  .card {
-    width: 160px;
-  }
-
-  main {
-    padding: 15px;
-  }
-
-  .buttons-container {
-    flex-direction: column;
-  }
-  
-  .primary-btn, .secondary-btn {
-    width: 100%;
-  }
+.secondary-btn:hover:not(:disabled) {
+    background-color: #9ccfff;
 }
 
 .success-message {
@@ -450,5 +359,33 @@ section h2 {
   opacity: 0;
   transform: translateX(100%);
   transition: all 0.3s ease;
-  font-family: inherit;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  main {
+    padding: 15px;
+  }
+  
+  .cards-container {
+    justify-content: center;
+  }
+  
+  .card {
+    width: 280px;
+    max-width: 90%;
+  }
+  
+  .button-section {
+    padding: 20px;
+  }
+  
+  .study-test-buttons,
+  .edit-buttons {
+    flex-direction: column;
+  }
+  
+  .primary-btn {
+    width: 100%;
+  }
 }

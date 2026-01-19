@@ -1,8 +1,8 @@
 package entity
 
 const (
-	PrivateModule = 0
-	PublicModule  = 1
+	PrivateModule = 1
+	PublicModule  = 0
 )
 
 type Module struct {
@@ -11,6 +11,11 @@ type Module struct {
 	Cards   []Card `json:"cards,omitempty"`
 	OwnerId int    `json:"owner_id"`
 	Type    int    `json:"type"`
+}
+
+type PopularModule struct {
+	Mod   Module `json:"module"`
+	Count int    `json:"count"`
 }
 
 type ModuleToCreate struct {

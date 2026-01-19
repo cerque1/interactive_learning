@@ -19,6 +19,11 @@ let searchResults = {
   modules: []
 };
 
+// Популярные модули и категории
+let popularItems = [];
+let popularOffset = 0;
+const POPULAR_LIMIT = 10;
+
 window.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -57,6 +62,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       allCategories = userData.user.categories;
     }
 
+    // Загружаем популярные
+    await loadPopular(token);
+    
     await loadAllResults(token, userData.user.id);
     updateEmptyMessages();
     
@@ -65,6 +73,78 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.body.innerHTML = '<p style="text-align:center; margin-top:150px; font-size:1.4em; color:#c75c5c;">Ошибка загрузки данных. Перезагрузите страницу.</p>';
   }
 });
+
+// ПОПУЛЯРНЫЕ
+async function loadPopular(token) {
+  try {
+    const [modulesRes, categoriesRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/api/v1/module/popular?limit=${POPULAR_LIMIT}&offset=${popularOffset}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }),
+      fetch(`${API_BASE_URL}/api/v1/category/popular?limit=${POPULAR_LIMIT}&offset=${popularOffset}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+    ]);
+
+    const [modulesData, categoriesData] = await Promise.all([
+      modulesRes.ok ? modulesRes.json() : { popular_modules: [] },
+      categoriesRes.ok ? categoriesRes.json() : { popular_categories: [] }
+    ]);
+
+    // Объединяем и сортируем по популярности
+    const modules = (modulesData.popular_modules || []).map(item => ({
+      ...item.module,
+      count: item.count,
+      type: 'module'
+    }));
+    
+    const categories = (categoriesData.popular_categories || []).map(item => ({
+      ...item.category,
+      count: item.users_count,
+      type: 'category'
+    }));
+
+    popularItems = [...modules, ...categories]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, POPULAR_LIMIT);
+
+    renderPopular();
+  } catch (error) {
+    console.error('Ошибка загрузки популярных:', error);
+    document.getElementById('popular-empty').style.display = 'block';
+  }
+}
+
+function renderPopular() {
+  const container = document.getElementById('popular-container');
+  const emptyMsg = document.getElementById('popular-empty');
+  const loadMoreBtn = document.getElementById('popular-load-more');
+
+  if (popularItems.length === 0) {
+    emptyMsg.style.display = 'block';
+    loadMoreBtn.style.display = 'none';
+    return;
+  }
+
+  emptyMsg.style.display = 'none';
+  
+  container.innerHTML = popularItems.map(item => `
+    <div class="card" onclick="window.location.href='/static/${item.type}.html?${item.type}_id=${item.id}'">
+      <div class="card-title">${item.name}</div>
+      <div class="card-subtitle">${item.type === 'module' ? 'Модуль' : 'Категория'}</div>
+      <div class="card-count">Пользователей за неделю: ${item.count}</div>
+    </div>
+  `).join('');
+
+  loadMoreBtn.style.display = popularItems.length >= POPULAR_LIMIT ? 'block' : 'none';
+  loadMoreBtn.onclick = loadMorePopular;
+}
+
+async function loadMorePopular() {
+  popularOffset += POPULAR_LIMIT;
+  const token = localStorage.getItem('token');
+  await loadPopular(token);
+}
 
 async function fetchModuleInfo(moduleId, token) {
   const res = await fetch(`${API_BASE_URL}/api/v1/module/${moduleId}`, {
@@ -329,7 +409,7 @@ async function loadMore(type) {
   }
 }
 
-// Аккордеоны (оригинальная логика)
+// Аккордеоны
 function initAccordions() {
   document.querySelectorAll('.accordion-header').forEach(header => {
     header.addEventListener('click', function(e) {
@@ -367,7 +447,6 @@ async function toggleAccordion(headerId) {
   }
 }
 
-// Остальная оригинальная логика...
 async function loadAllResults(token, userId) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/v1/results/to_user/${userId}`, {

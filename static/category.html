@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Просмотр категории</title>
+<link rel="stylesheet" href="general_style.css" />
 <link rel="stylesheet" href="category_style.css" />
 </head>
 <body>
@@ -26,23 +27,33 @@
     <h2 id="category-name">Загрузка...</h2>
     
     <div class="buttons-container">
-      <button id="add-module-btn" class="primary-btn" style="display:none;">
-        Добавить модуль
-      </button>
-      <!-- НОВАЯ КНОПКА ТИПА КАТЕГОРИИ -->
-      <button id="toggle-category-type-btn" class="primary-btn" style="display:none;">
-        <span id="toggle-type-text">Сделать публичной</span>
-      </button>
-      <button id="study-modules-btn" class="primary-btn" style="display:none;">
-        Выбрать модули для заучивания
-      </button>
-      <button id="test-modules-btn" class="primary-btn" style="display:none;">
-        Выбрать модули для тестирования
-      </button>
-      <button id="edit-category-btn" class="primary-btn" style="display:none;">
-        Редактировать категорию
-      </button>
+      <!-- Блок заучивания и тестирования -->
+      <div class="button-section study-section">
+        <div class="button-section-header">
+          Действия с модулями
+        </div>
+        <div class="study-test-buttons">
+          <button id="study-modules-btn" class="primary-btn" style="display:none;">Заучивание</button>
+          <button id="test-modules-btn" class="primary-btn" style="display:none;">Тестирование</button>
+        </div>
+      </div>
+
+      <!-- Блок редактирования для владельца -->
+      <div class="button-section edit-section" id="edit-buttons-container" style="display:none;">
+        <div class="button-section-header">
+          Управление категорией
+        </div>
+        <div class="edit-buttons">
+          <button id="add-module-btn" class="primary-btn">Добавить модуль</button>
+          <button id="toggle-category-type-btn" class="primary-btn">
+            <span id="toggle-type-text">Сделать публичной</span>
+          </button>
+          <button id="edit-category-btn" class="primary-btn">Редактировать</button>
+        </div>
+      </div>
     </div>
+
+    <h2 class="section-subtitle">Содержание модуля</h2>
 
     <div id="modules-container" class="cards-container"></div>
     <div id="empty-message" class="empty-message" style="display:none;">В данной категории нет модулей</div>

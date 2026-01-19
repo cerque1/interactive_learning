@@ -13,6 +13,11 @@ type Category struct {
 	Type    int      `json:"type"` // если >= 1 то приват, значение больше храниться в бд для отслеживания сколько приватных модулей
 }
 
+type PopularCategory struct {
+	Cat   Category `json:"category"`
+	Count int      `json:"users_count"`
+}
+
 type CategoryToCreate struct {
 	Name    string `json:"name"`
 	OwnerId int    `json:"-"`

@@ -423,6 +423,10 @@ func (u *UseCase) GetModuleOwnerId(moduleId int) (int, error) {
 	return u.moduleRepoRead.GetModuleOwnerId(moduleId)
 }
 
+func (u *UseCase) GetPopularModules(limit, offset int) ([]entity.PopularModule, error) {
+	return u.moduleRepoRead.GetPopularModules(limit, offset)
+}
+
 func (u *UseCase) InsertModule(module entity.ModuleToCreate) (int, []int, error) {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
@@ -659,6 +663,10 @@ func (u *UseCase) GetCategoryById(id int, userId int) (entity.Category, error) {
 	category.Modules = modules
 
 	return category, nil
+}
+
+func (u *UseCase) GetPopularCategories(limit, offset int) ([]entity.PopularCategory, error) {
+	return u.categoryRepoRead.GetPopularCategories(limit, offset)
 }
 
 func (u *UseCase) InsertCategory(category entity.CategoryToCreate) (int, error) {

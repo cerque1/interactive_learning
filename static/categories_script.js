@@ -35,7 +35,13 @@ function createCategoryCard(category) {
   card.dataset.categoryId = category.id;
   card.style.cursor = 'pointer';
   
+  const privacyType = category.type === 0 ? 'public' : 'private';
+  const privacyText = category.type === 0 ? 'Открытая' : 'Приватная';
+  
   card.innerHTML = `
+    <div class="card-header">
+      <div class="category-type ${privacyType}">${privacyText}</div>
+    </div>
     <div class="card-title">${category.name}</div>
     <div class="card-actions">
       <button class="category-action-btn edit" title="Редактировать категорию">✎</button>
