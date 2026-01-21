@@ -18,6 +18,7 @@
   <nav id="nav-panel">
     <h2>Панель навигации</h2>
     <button id="main-btn">Главная</button>
+    <button id="selected-btn">Избранное</button>
     <button id="modules-btn">Модули</button>
     <button id="categories-btn">Категории</button>
     <button id="results-btn">Результаты</button>
@@ -30,11 +31,14 @@
       <!-- Блок заучивания и тестирования -->
       <div class="button-section study-section">
         <div class="button-section-header">
-          Действия с модулями
+          Действия с категорией
         </div>
         <div class="study-test-buttons">
           <button id="study-modules-btn" class="primary-btn" style="display:none;">Заучивание</button>
           <button id="test-modules-btn" class="primary-btn" style="display:none;">Тестирование</button>
+          <button id="toggle-favorite-btn" class="primary-btn" title="Добавить/убрать категорию из избранного">
+            <span id="favorite-text">В избранное</span>
+          </button>
         </div>
       </div>
 
@@ -49,6 +53,8 @@
             <span id="toggle-type-text">Сделать публичной</span>
           </button>
           <button id="edit-category-btn" class="primary-btn">Редактировать</button>
+          <button id="rename-category-btn" class="primary-btn">Переименовать</button>
+          <button id="delete-category-btn" class="primary-btn danger-btn">Удалить категорию</button>
         </div>
       </div>
     </div>
@@ -126,6 +132,28 @@
     </div>
   </div>
 </div>
+
+<!-- Модальное окно переименования категории -->
+<div id="renameCategoryModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Переименовать категорию</h3>
+      <button id="closeRenameCategoryModal" class="close-btn">&times;</button>
+    </div>
+    <div id="rename-category-error" class="error-message" style="display:none;"></div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label for="rename-category-input">Новое название категории</label>
+        <input type="text" id="rename-category-input" class="search-input" maxlength="100" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="confirm-rename-category-btn" class="primary-btn" disabled>Переименовать</button>
+      <button id="cancel-rename-category-modal" class="secondary-btn">Отмена</button>
+    </div>
+  </div>
+</div>
+
 
 <script src="category_script.js"></script>
 </body>

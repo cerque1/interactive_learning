@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Избранное - Заучка</title>
+  <link rel="stylesheet" href="general_style.css" />
+  <link rel="stylesheet" href="selected_style.css" />
+</head>
+<body>
+  <header>
+    <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
+    <a id="head" href="/static/main.html" class="header-link">Заучка</a>
+    <div id="username"></div>
+  </header>
+
+  <main>
+    <nav id="nav-panel">
+      <h2>Панель навигации</h2>
+      <button id="main-btn">Главная</button>
+      <button id="modules-btn">Мои модули</button>
+      <button id="categories-btn">Категории</button>
+      <button id="results-btn">Результаты</button>
+    </nav>  
+
+    <div id="nav-panel-overlay"></div>
+
+    <section id="favorites-section">
+      <div class="section-header">
+        <h2 id="page-title">Избранное</h2>
+      </div>
+
+      <!-- Вкладки модули/категории -->
+      <div class="tabs-container">
+        <button class="tab-btn active" data-tab="modules">Модули</button>
+        <button class="tab-btn" data-tab="categories">Категории</button>
+      </div>
+
+      <!-- Контейнеры для модулей и категорий -->
+      <div id="modules-container" class="cards-container tab-content active"></div>
+      <div id="categories-container" class="cards-container tab-content"></div>
+      
+      <div id="empty-state" class="empty-message" style="display:none;">
+        Избранных элементов нет
+      </div>
+    </section>
+  </main>
+
+  <script src="selected_script.js"></script>
+</body>
+</html>

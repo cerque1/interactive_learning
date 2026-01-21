@@ -4,7 +4,6 @@
   padding: 0;
 }
 
-/* Базовые стили body/html */
 body, html {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   background: linear-gradient(135deg, #f0f4ff 0%, #e0e8ff 50%, #f8fbff 100%);
@@ -13,7 +12,6 @@ body, html {
   min-height: 100vh;
 }
 
-/* COMMON HEADER */
 header {
   position: fixed;
   top: 0;

@@ -133,3 +133,19 @@ type CategoryModulesResultsRepoWrite interface {
 	DeleteAllToCategory(categoryId int) error
 	DeleteResultById(categoryResultId int) error
 }
+
+type SelectedRepoRead interface {
+	GetAllSelectedModulesByUser(userId int) ([]entity.Module, error)
+	GetAllSelectedCategoriesByUser(userId int) ([]entity.Category, error)
+	GetUsersCountToSelectedModule(moduleId int) (int, error)
+	GetUsersCountToSelectedCategory(categoryId int) (int, error)
+}
+
+type SelectedRepoWrite interface {
+	InsertSelectedModuleToUser(userId, moduleId int) error
+	InsertSelectedCategoryToUser(userId, categoryId int) error
+	DeleteAllToModule(moduleId int) error
+	DeleteAllToCategory(categoryId int) error
+	DeleteModuleToUser(userId, moduleId int) error
+	DeleteCategoryToUser(userId, categoryId int) error
+}

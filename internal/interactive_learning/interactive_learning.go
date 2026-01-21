@@ -75,8 +75,9 @@ func Run(migrationsDir string, migrationsFS embed.FS, pathToStatic string) {
 		persistent.NewResultsRepo(db),
 		persistent.NewCardsResultsRepo(db),
 		persistent.NewModulesResultsRepo(db),
-		persistent.NewCategoryModulesResultsRepo(db))
-	e := infrastructure.NewEcho(pathToStatic, us, us, us, us, us, us, us)
+		persistent.NewCategoryModulesResultsRepo(db),
+		persistent.NewSelectedRepo(db))
+	e := infrastructure.NewEcho(pathToStatic, us, us, us, us, us, us, us, us)
 
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger())

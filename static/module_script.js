@@ -1,9 +1,9 @@
 const API_BASE_URL = window.location.origin;
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-        window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+        window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
         return;
     }
 
@@ -14,43 +14,53 @@ window.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const studyModuleBtn = document.getElementById('study-module-btn');
-    const testModuleBtn = document.getElementById('test-module-btn');
-
-    if (studyModuleBtn && moduleId) {
-        studyModuleBtn.addEventListener('click', () => {
-            window.location.href = `/static/learning.html?modules_ids=${moduleId}`;
-        });
-    }
-
-    if (testModuleBtn && moduleId) {
-        testModuleBtn.addEventListener('click', () => {
-            window.location.href = `/static/test.html?modules_ids=${moduleId}`;
-        });
-    }
-
     let currentUserId = null;
     let moduleOwnerId = null;
-    let moduleType = null; // 0 - закрытый, 1 - открытый
+    let moduleType = null;
     let isEditMode = false;
-    let moduleCards = []; // ✅ Храним карточки для логики кнопок
+    let moduleCards = [];
+    let isModuleFavorite = false;
+    let userLoaded = false;
+    let moduleLoaded = false;
+    let originalModuleName = '';
 
+    const studyModuleBtn = document.getElementById('study-module-btn');
+    const testModuleBtn = document.getElementById('test-module-btn');
+    const favoriteBtn = document.getElementById('toggle-favorite-btn');
     const addCardsBtn = document.getElementById('add-cards-btn');
     const editModuleBtn = document.getElementById('edit-module-btn');
     const toggleModuleTypeBtn = document.getElementById('toggle-module-type-btn');
     const toggleTypeText = document.getElementById('toggle-type-text');
+    const deleteModuleBtn = document.getElementById('delete-module-btn');
+    const renameModuleBtn = document.getElementById('rename-module-btn');
 
-    let userLoaded = false;
-    let moduleLoaded = false;
+    function showSuccessMessage(message) {
+        const notification = document.createElement('div');
+        notification.className = 'success-message';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        requestAnimationFrame(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        });
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
 
-    // Функция загрузки данных пользователя
     function fetchUser() {
         return fetch(`${API_BASE_URL}/api/v1/user/me?is_full=f`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => {
             if (res.status === 401) {
-                window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+                window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 return Promise.reject();
             }
             return res.json();
@@ -60,9 +70,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 currentUserId = userData.user.id;
                 const usernameElem = document.getElementById('username');
                 usernameElem.textContent = userData.user.name || 'Пользователь';
-                usernameElem.onclick = () => {
-                    window.location.href = '/static/profile.html';
-                };
+                usernameElem.style.cursor = 'pointer';
+                usernameElem.onclick = () => window.location.href = '/static/profile.html';
             }
             userLoaded = true;
             checkShowButtons();
@@ -73,14 +82,109 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Функция загрузки данных модуля
+    function loadModuleFavorite() {
+        return fetch(`${API_BASE_URL}/api/v1/selected/modules/`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => {
+            if (res.status === 401) {
+                window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                return false;
+            }
+            if (!res.ok) return false;
+            return res.json();
+        })
+        .then(data => {
+            if (data.selected_modules?.length) {
+                isModuleFavorite = data.selected_modules.some(m => m.id == moduleId);
+            }
+            updateFavoriteButton();
+            return isModuleFavorite;
+        })
+        .catch(() => {
+            isModuleFavorite = false;
+            updateFavoriteButton();
+            return false;
+        });
+    }
+
+    function updateFavoriteButton() {
+        const favoriteBtn = document.getElementById('toggle-favorite-btn');
+        const favoriteText = document.getElementById('favorite-text');
+        if (!favoriteBtn || !favoriteText) return;
+        
+        if (isModuleFavorite) {
+            favoriteBtn.classList.add('filled');
+            favoriteText.textContent = 'Убрать из избранного';
+            favoriteBtn.title = 'Убрать из избранного';
+        } else {
+            favoriteBtn.classList.remove('filled');
+            favoriteText.textContent = 'Добавить в избранное';
+            favoriteBtn.title = 'Добавить в избранное';
+        }
+    }
+
+    function toggleModuleFavorite() {
+        const favoriteBtn = document.getElementById('toggle-favorite-btn');
+        if (!favoriteBtn) return;
+        
+        if (isModuleFavorite) {
+            fetch(`${API_BASE_URL}/api/v1/selected/modules/delete?module_id=${moduleId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                    return;
+                }
+                if (res.ok) {
+                    isModuleFavorite = false;
+                    updateFavoriteButton();
+                    showSuccessMessage('Модуль убран из избранного');
+                } else {
+                    alert('Ошибка удаления из избранного');
+                }
+            })
+            .catch(err => {
+                console.error('Ошибка:', err);
+                alert('Ошибка удаления из избранного');
+            });
+        } else {
+            fetch(`${API_BASE_URL}/api/v1/selected/modules/insert?module_id=${moduleId}`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                    return;
+                }
+                if (res.ok) {
+                    isModuleFavorite = true;
+                    updateFavoriteButton();
+                    showSuccessMessage('Модуль добавлен в избранное');
+                } else {
+                    alert('Ошибка добавления в избранное');
+                }
+            })
+            .catch(err => {
+                console.error('Ошибка:', err);
+                alert('Ошибка добавления в избранное');
+            });
+        }
+    }
+
     function fetchModule() {
         return fetch(`${API_BASE_URL}/api/v1/module/${moduleId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => {
             if (res.status === 401) {
-                window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+                window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 return Promise.reject();
             }
             if (!res.ok) {
@@ -92,7 +196,7 @@ window.addEventListener('DOMContentLoaded', () => {
             moduleData = moduleData.module;
             moduleOwnerId = moduleData.user_id || moduleData.owner_id;
             moduleType = moduleData.type || 0;
-            moduleCards = moduleData.cards || []; // ✅ Сохраняем карточки
+            moduleCards = moduleData.cards || [];
 
             const moduleNameElem = document.getElementById('module-name');
             const cardsContainer = document.getElementById('cards-container');
@@ -138,16 +242,13 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ✅ НОВАЯ ФУНКЦИЯ checkShowButtons (как в категории)
     function checkShowButtons() {
         if (userLoaded && moduleLoaded) {
             const isOwner = currentUserId && moduleOwnerId && currentUserId == moduleOwnerId;
             
-            // Кнопки заучивания/тестирования (показывать если есть карточки)
             if (studyModuleBtn) studyModuleBtn.style.display = moduleCards.length > 0 ? 'inline-block' : 'none';
             if (testModuleBtn) testModuleBtn.style.display = moduleCards.length > 0 ? 'inline-block' : 'none';
             
-            // Блок редактирования целиком (только для владельца)
             const editButtonsContainer = document.getElementById('edit-buttons-container');
             if (editButtonsContainer) {
                 editButtonsContainer.style.display = isOwner ? 'flex' : 'none';
@@ -155,45 +256,18 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Функция обновления кнопки типа модуля
     function updateModuleTypeButton() {  
         if (!toggleModuleTypeBtn || moduleType === null) return; 
         
-        if (moduleType === 0) { // публичный 
+        if (moduleType === 0) {
             toggleTypeText.textContent = 'Сделать приватным'; 
             toggleModuleTypeBtn.title = 'Изменить модуль на приватный (только для владельцев)'; 
-        } else { // приватный 
+        } else {
             toggleTypeText.textContent = 'Сделать публичным'; 
             toggleModuleTypeBtn.title = 'Изменить модуль на публичный (доступен всем)'; 
         } 
-    } 
-
-    // Запускаем параллельные запросы
-    fetchUser();
-    fetchModule();
-
-    // Функция для показа уведомления об успехе
-    function showSuccessMessage(message) {
-        const notification = document.createElement('div');
-        notification.className = 'success-message';
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        requestAnimationFrame(() => {
-            notification.style.opacity = '1';
-            notification.style.transform = 'translateX(0)';
-        });
-        
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
     }
 
-    // Функция обновления состояния пустого контейнера
     function updateEmptyState() {
         const cardsContainer = document.getElementById('cards-container');
         const emptyMessage = document.getElementById('empty-message');
@@ -207,14 +281,12 @@ window.addEventListener('DOMContentLoaded', () => {
             emptyMessage.style.display = 'none';
         }
         
-        // ✅ Обновляем moduleCards для корректной работы кнопок
         moduleCards = Array.from(remainingCards).map(card => ({
             id: parseInt(card.dataset.cardId)
         }));
-        checkShowButtons(); // Перепроверяем видимость кнопок
+        checkShowButtons();
     }
 
-    // Обработчик удаления карточки
     function handleDeleteClick(e) {
         e.stopPropagation();
         const card = e.target.closest('.card');
@@ -230,7 +302,7 @@ window.addEventListener('DOMContentLoaded', () => {
         })
         .then(res => {
             if (res.status === 401) {
-                window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+                window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 return;
             }
             if (!res.ok) {
@@ -255,7 +327,6 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Обработчик редактирования карточки
     function handleEditClick(e) {
         e.stopPropagation();
         const card = e.target.closest('.card');
@@ -287,7 +358,6 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('editCardModal').style.display = 'flex';
     }
 
-    // Обработчик кнопки редактирования модуля
     if (editModuleBtn) {
         editModuleBtn.addEventListener('click', () => {
             isEditMode = !isEditMode;
@@ -307,7 +377,6 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Обработчик кнопки изменения типа модуля
     if (toggleModuleTypeBtn) {
         toggleModuleTypeBtn.addEventListener('click', () => {
             if (!(currentUserId && moduleOwnerId && Number(currentUserId) === Number(moduleOwnerId))) {
@@ -326,7 +395,7 @@ window.addEventListener('DOMContentLoaded', () => {
             })
             .then(res => {
                 if (res.status === 401) {
-                    window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+                    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
                     return Promise.reject();
                 }
                 if (!res.ok) {
@@ -351,7 +420,145 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Обработчики кнопок действий карточек
+    if (deleteModuleBtn) {
+        deleteModuleBtn.addEventListener('click', () => {
+            if (!(currentUserId && moduleOwnerId && Number(currentUserId) === Number(moduleOwnerId))) {
+                return;
+            }
+            if (confirm('Вы уверены, что хотите удалить этот модуль? Все карточки будут удалены навсегда.')) {
+                fetch(`${API_BASE_URL}/api/v1/module/delete/${moduleId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => {
+                    if (res.status === 401) {
+                        window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                        return;
+                    }
+                    if (!res.ok) throw new Error('Ошибка удаления модуля');
+                    return res.json();
+                })
+                .then(() => {
+                    showSuccessMessage('Модуль успешно удален');
+                    setTimeout(() => {
+                        window.location.href = '/static/modules.html';
+                    }, 1500);
+                })
+                .catch(err => {
+                    alert('Ошибка удаления модуля: ' + err.message);
+                });
+            }
+        });
+    }
+
+    const renameModuleModal = document.getElementById('renameModuleModal');
+    const closeRenameModal = document.getElementById('closeRenameModal');
+    const cancelRenameModal = document.getElementById('cancel-rename-modal');
+    const confirmRenameBtn = document.getElementById('confirm-rename-btn');
+    const renameModuleInput = document.getElementById('rename-module-input');
+    const renameError = document.getElementById('rename-error');
+
+    if (renameModuleBtn) {
+        renameModuleBtn.addEventListener('click', () => {
+            if (!(currentUserId && moduleOwnerId && Number(currentUserId) === Number(moduleOwnerId))) {
+                return;
+            }
+            originalModuleName = document.getElementById('module-name').textContent;
+            renameModuleInput.value = originalModuleName;
+            renameError.style.display = 'none';
+            confirmRenameBtn.disabled = true;
+            renameModuleModal.style.display = 'flex';
+            renameModuleInput.focus();
+        });
+    }
+
+    function validateRenameInput() {
+        const newName = renameModuleInput.value.trim();
+        const isValid = newName && newName !== originalModuleName;
+        confirmRenameBtn.disabled = !isValid;
+        
+        if (newName === originalModuleName) {
+            renameError.textContent = 'Название должно отличаться от текущего';
+            renameError.style.display = 'block';
+        } else if (!newName) {
+            renameError.style.display = 'none';
+        } else {
+            renameError.style.display = 'none';
+        }
+    }
+
+    if (renameModuleInput) {
+        renameModuleInput.addEventListener('input', validateRenameInput);
+    }
+
+    if (closeRenameModal) closeRenameModal.addEventListener('click', () => {
+        renameModuleModal.style.display = 'none';
+    });
+
+    if (cancelRenameModal) cancelRenameModal.addEventListener('click', () => {
+        renameModuleModal.style.display = 'none';
+    });
+
+    if (renameModuleModal) {
+        renameModuleModal.addEventListener('click', (e) => {
+            if (e.target === renameModuleModal) renameModuleModal.style.display = 'none';
+        });
+    }
+
+    if (confirmRenameBtn) {
+        confirmRenameBtn.addEventListener('click', () => {
+            const newName = renameModuleInput.value.trim();
+            if (!newName || newName === originalModuleName) {
+                validateRenameInput();
+                return;
+            }
+
+            fetch(`${API_BASE_URL}/api/v1/module/rename/${moduleId}`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`, 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ new_name: newName })
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                    return;
+                }
+                if (res.status === 400) throw new Error('Неверное название модуля');
+                if (res.status === 409) throw new Error('Модуль с таким названием уже существует');
+                if (!res.ok) throw new Error('Ошибка переименования модуля');
+                return res.json();
+            })
+            .then(() => {
+                document.getElementById('module-name').textContent = newName;
+                renameModuleModal.style.display = 'none';
+                showSuccessMessage('Модуль переименован');
+            })
+            .catch(err => {
+                renameError.textContent = err.message || 'Ошибка переименования модуля';
+                renameError.style.display = 'block';
+            });
+        });
+    }
+
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', () => toggleModuleFavorite());
+    }
+
+    if (studyModuleBtn && moduleId) {
+        studyModuleBtn.addEventListener('click', () => {
+            window.location.href = `/static/learning.html?modules_ids=${moduleId}`;
+        });
+    }
+
+    if (testModuleBtn && moduleId) {
+        testModuleBtn.addEventListener('click', () => {
+            window.location.href = `/static/test.html?modules_ids=${moduleId}`;
+        });
+    }
+
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('delete')) {
             handleDeleteClick(e);
@@ -360,29 +567,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Навигация
-    const navToggle = document.getElementById('nav-toggle');
-    const navPanel = document.getElementById('nav-panel');
-    const navMainBut = document.getElementById('main-btn');
-    const navModulesBut = document.getElementById('modules-btn');
-    const navCategoriesBut = document.getElementById('categories-btn');
-    const navResultsBut = document.getElementById('results-btn');
-    const head = document.getElementById('head');
-
-    if (navToggle && navPanel) {
-        navToggle.addEventListener('click', () => {
-            navPanel.classList.toggle('open');
-            navToggle.classList.toggle('open');
-        });
-    }
-
-    if (navMainBut) navMainBut.addEventListener('click', () => window.location.href = '/static/main.html');
-    if (navModulesBut) navModulesBut.addEventListener('click', () => window.location.href = '/static/modules.html');
-    if (navCategoriesBut) navCategoriesBut.addEventListener('click', () => window.location.href = '/static/categories.html');
-    if (navResultsBut) navResultsBut.addEventListener('click', () => window.location.href = '/static/results.html');
-    if (head) head.addEventListener('click', () => window.location.href = '/static/main.html');
-
-    // ====== ЛОГИКА МОДАЛКИ ДОБАВЛЕНИЯ КАРТОЧЕК ======
     const addCardsModal = document.getElementById('addCardsModal');
     const closeAddCardsModal = document.getElementById('closeAddCardsModal');
     const cancelAddCardsModal = document.getElementById('cancelAddCardsModal');
@@ -512,7 +696,6 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Обработчик сохранения карточек
     if (saveCardsBtn) {
         saveCardsBtn.addEventListener('click', () => {
             addCardsError.style.display = 'none';
@@ -554,7 +737,7 @@ window.addEventListener('DOMContentLoaded', () => {
             })
             .then(res => {
                 if (res.status === 401) {
-                    window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+                    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
                     return;
                 }
                 if (res.status === 400) throw new Error('Неверные данные');
@@ -608,7 +791,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     });
                 });
                 
-                // ✅ Обновляем moduleCards после добавления
                 moduleCards = moduleCards.concat(newIds.map(id => ({ id })));
                 checkShowButtons();
                 
@@ -621,7 +803,6 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ====== ЛОГИКА МОДАЛКИ РЕДАКТИРОВАНИЯ КАРТОЧКИ ======
     const editCardModal = document.getElementById('editCardModal');
     const closeEditCardModal = document.getElementById('closeEditCardModal');
     const cancelEditCardModal = document.getElementById('cancelEditCardModal');
@@ -696,7 +877,7 @@ window.addEventListener('DOMContentLoaded', () => {
             })
             .then(res => {
                 if (res.status === 401) {
-                    window.location.href = '/static/login.html?redirect=' + encodeURIComponent(window.location.href);
+                    window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
                     return;
                 }
                 if (res.status === 400) throw new Error('Неверные данные');
@@ -725,4 +906,25 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    const navToggle = document.getElementById('nav-toggle');
+    const navPanel = document.getElementById('nav-panel');
+    if (navToggle && navPanel) {
+        navToggle.addEventListener('click', () => {
+            navPanel.classList.toggle('open');
+            navToggle.classList.toggle('open');
+        });
+    }
+
+    ['main-btn', 'modules-btn', 'categories-btn', 'selected-btn', 'results-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', () => window.location.href = `/static/${id.replace('-btn', '.html')}`);
+    });
+
+    const head = document.getElementById('head');
+    if (head) head.addEventListener('click', () => window.location.href = '/static/main.html');
+
+    await fetchUser();
+    await loadModuleFavorite();
+    await fetchModule();
 });

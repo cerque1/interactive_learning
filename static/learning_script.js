@@ -68,7 +68,7 @@ function setupNavigation() {
         });
     }
 
-    ['main-btn', 'modules-btn', 'categories-btn', 'results-btn'].forEach(id => {
+    ['main-btn', 'modules-btn', 'categories-btn', 'selected-btn', 'results-btn'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.addEventListener('click', () => window.location.href = `/static/${id.replace('-btn', '.html')}`);
     });

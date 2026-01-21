@@ -17,6 +17,7 @@ type UnitOfWork interface {
 	GetCardsResultsRepoWriter() repo.CardsResultsRepoWrite
 	GetModulesResultsRepoWriter() repo.ModulesResultsRepoWrite
 	GetCategoryModulesResultsRepoWriter() repo.CategoryModulesResultsRepoWrite
+	GetSelectedRepoWriter() repo.SelectedRepoWrite
 
 	GetUsersRepoReader() repo.UsersRepoRead
 	GetCardRepoReader() repo.CardRepoRead
@@ -27,4 +28,5 @@ type UnitOfWork interface {
 	GetCardsResultsRepoReader() repo.CardsResultsRepoRead
 	GetModulesResultsRepoReader() repo.ModulesResultsRepoRead
 	GetCategoryModulesResultsRepoReader() repo.CategoryModulesResultsRepoRead
+	GetSelectedRepoReader() repo.SelectedRepoRead
 }

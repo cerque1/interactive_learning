@@ -6,6 +6,7 @@ import (
 	"interactive_learning/internal/infrastructure/category"
 	"interactive_learning/internal/infrastructure/module"
 	"interactive_learning/internal/infrastructure/results"
+	"interactive_learning/internal/infrastructure/selected"
 	"interactive_learning/internal/infrastructure/user"
 	"interactive_learning/internal/usecase"
 	"net/http"
@@ -14,13 +15,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens, cardUC usecase.Cards, modulesUC usecase.Modules, categorieUC usecase.Categories, categoryModulesUC usecase.CategoryModules, resultsUC usecase.Results) *echo.Echo {
+func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens, cardUC usecase.Cards, modulesUC usecase.Modules, categorieUC usecase.Categories, categoryModulesUC usecase.CategoryModules, resultsUC usecase.Results, selectUC usecase.Selected) *echo.Echo {
 	authRoutes := auth.NewAuthRoutes(usersUC, tokensUC)
 	usersRoutes := user.NewUserRoues(usersUC)
 	moduleRoutes := module.NewModuleRoutes(modulesUC, cardUC)
 	cardRoutes := card.NewCardRoutes(cardUC)
 	categoriesRoutes := category.NewCategoryRoutes(categorieUC, categoryModulesUC)
 	resultsRoutes := results.NewResultsRoutes(resultsUC)
+	selectedRoutes := selected.NewSelectedRouter(selectUC)
 
 	e := echo.New()
 	e.Static("/static", pathToStatic)
@@ -37,6 +39,19 @@ func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens
 	users := v1.Group("/user")
 	users.GET("/me", usersRoutes.GetUserInfoById)
 	users.GET("/:id", usersRoutes.GetUserInfoById)
+
+	selected := v1.Group("/selected")
+	selectedModules := selected.Group("/modules")
+	selectedModules.POST("/insert", selectedRoutes.InsertSelectedModuleToUser)
+	selectedModules.DELETE("/delete", selectedRoutes.DeleteModuleToUser)
+	selectedModules.GET("/users_count", selectedRoutes.GetUsersCountToSelectedModuleOrCategory)
+	selectedModules.GET("/", selectedRoutes.GetAllSelectedModulesByUser)
+
+	selectedCategories := selected.Group("/categories")
+	selectedCategories.POST("/insert", selectedRoutes.InsertSelectedCategoryToUser)
+	selectedCategories.DELETE("/delete", selectedRoutes.DeleteCategoryToUser)
+	selectedCategories.GET("/users_count", selectedRoutes.GetUsersCountToSelectedModuleOrCategory)
+	selectedCategories.GET("/", selectedRoutes.GetAllSelectedCategoriesByUser)
 
 	results := v1.Group("/results")
 	results.GET("/to_user/:id", resultsRoutes.GetResultsByOwner)

@@ -33,29 +33,36 @@ section h2 {
 }
 
 .card {
+  position: relative;
   width: 190px;
   min-height: 120px;
   background-color: #bfdeff;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 8px rgba(86, 122, 190, 0.3);
-  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .card-header {
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  gap: 4px;
+  align-items: flex-start;
+  z-index: 5;
 }
 
 .card-title {
-  margin-top: 24px;
+  margin-top: 32px;
   font-weight: 700;
   font-size: 1.1em;
   margin-bottom: 8px;
   color: #154273;
 }
 
+/* Тип категории */
 .category-type {
   background: #4a90e2;
   color: white;
@@ -64,7 +71,46 @@ section h2 {
   font-size: 11px;
   font-weight: 500;
   display: inline-block;
-  margin-top: 4px;
+}
+
+.category-type.public {
+  background: #28a745;
+}
+
+.category-type.private {
+  background: #4a90e2;
+}
+
+/* Звездочка избранного */
+.star-favorite {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #ccc;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.star-favorite.filled {
+  background: #ffd700;
+  color: #333;
+}
+
+.star-favorite:hover {
+  transform: scale(1.1);
+}
+
+.star-favorite.filled:hover {
+  background: #ffed4a;
+  color: #333;
 }
 
 .empty-message {
@@ -75,6 +121,7 @@ section h2 {
   padding: 40px 20px;
 }
 
+/* Кнопки действий */
 .card-actions {
   display: none;
   position: absolute;

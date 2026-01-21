@@ -597,7 +597,8 @@ function initNavigation() {
   const navButtons = {
     'modules-btn': '/static/modules.html',
     'categories-btn': '/static/categories.html',
-    'results-btn': '/static/results.html'
+    'results-btn': '/static/results.html',
+    'selected-btn': '/static/selected.html'
   };
 
   Object.entries(navButtons).forEach(([id, url]) => {

@@ -1,4 +1,7 @@
 const API_BASE_URL = window.location.origin;
+let favoriteModules = new Set();
+let isEditMode = false;
+let currentCards = [];
 
 function getTypeAsInt(type) {
   return type === 'public' ? 0 : 1;
@@ -31,8 +34,86 @@ function loadUserName(token) {
   .catch(() => null);
 }
 
-let isEditMode = false;
-let currentCards = [];
+function toggleFavorite(moduleId, starBtn) {
+  const token = localStorage.getItem('token');
+  const isFilled = starBtn.classList.contains('filled');
+  
+  if (isFilled) {
+    // Удаляем из избранного
+    fetch(`${API_BASE_URL}/api/v1/selected/modules/delete?module_id=${moduleId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(res => {
+      if (res.status === 401) {
+        window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        return;
+      }
+      if (res.ok) {
+        starBtn.classList.remove('filled');
+        starBtn.title = 'Добавить в избранное';
+        favoriteModules.delete(moduleId);
+      } else {
+        alert('Ошибка удаления из избранного');
+      }
+    })
+    .catch(err => {
+      console.error('Ошибка:', err);
+      alert('Ошибка удаления из избранного');
+    });
+  } else {
+    // Добавляем в избранное
+    fetch(`${API_BASE_URL}/api/v1/selected/modules/insert?module_id=${moduleId}`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(res => {
+      if (res.status === 401) {
+        window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        return;
+      }
+      if (res.ok) {
+        starBtn.classList.add('filled');
+        starBtn.title = 'Убрать из избранного';
+        favoriteModules.add(moduleId);
+      } else {
+        alert('Ошибка добавления в избранное');
+      }
+    })
+    .catch(err => {
+      console.error('Ошибка:', err);
+      alert('Ошибка добавления в избранное');
+    });
+  }
+}
+
+function loadFavoriteModules(token) {
+  return fetch(`${API_BASE_URL}/api/v1/selected/modules/`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  .then(res => {
+    if (res.status === 401) {
+      window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+      return [];
+    }
+    if (!res.ok) return [];
+    return res.json();
+  })
+  .then(data => {
+    favoriteModules.clear();
+    if (data.selected_modules?.length) {
+      data.selected_modules.forEach(module => {
+        favoriteModules.add(module.id.toString());
+      });
+    }
+  })
+  .catch(() => {
+    favoriteModules.clear();
+  });
+}
 
 function createModuleCard(module) { 
   const card = document.createElement('div');
@@ -41,10 +122,13 @@ function createModuleCard(module) {
   card.style.cursor = 'pointer';
   
   const typeText = module.type === 0 ? 'Открытый' : 'Приватный';
+  const isFavorite = favoriteModules.has(module.id.toString());
   
   card.innerHTML = `
     <div class="card-header">
       <span class="module-type">${typeText}</span>
+      <button class="star-favorite ${isFavorite ? 'filled' : ''}" 
+              title="${isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}">⭐</button>
     </div>
     <div class="card-title">${module.name}</div>
     <div class="card-actions">
@@ -53,23 +137,32 @@ function createModuleCard(module) {
     </div>
   `;
   
+  // Звездочка избранного
+  const starBtn = card.querySelector('.star-favorite');
+  starBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFavorite(module.id, starBtn);
+  });
+
+  // Кнопка удаления
   const deleteBtn = card.querySelector('.delete');
   deleteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     handleDeleteModule(module.id, card);
   });
 
+  // Кнопка редактирования
   const editBtn = card.querySelector('.edit');
   editBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    // Открываем модалку редактирования
     if (window.openEditModuleModal) {
       window.openEditModuleModal(module.id, module.name);
     }
   });
 
+  // Основной клик по карточке
   card.addEventListener('click', (e) => {
-    if (!e.target.closest('.module-action-btn')) {
+    if (!e.target.closest('.module-action-btn') && !e.target.closest('.star-favorite')) {
       window.location.href = `/static/module.html?module_id=${module.id}`;
     }
   });
@@ -104,6 +197,7 @@ function handleDeleteModule(moduleId, cardElement) {
     setTimeout(() => {
       cardElement.remove();
       currentCards = currentCards.filter(c => c !== cardElement);
+      favoriteModules.delete(moduleId.toString());
       checkEmptyState();
     }, 300);
   })
@@ -140,7 +234,7 @@ function loadModules(token, userId, myId) {
     if (!res.ok) throw new Error('Network error');
     return res.json();
   })
-  .then(modules => {
+  .then(modulesData => {
     const container = document.getElementById('modules-container');
     const emptyMsg = document.getElementById('modules-empty');
     const pageTitle = document.getElementById('page-title');
@@ -148,11 +242,11 @@ function loadModules(token, userId, myId) {
     container.innerHTML = '';
     currentCards = [];
     
-    if (!modules.modules?.length) {
+    if (!modulesData.modules?.length) {
       emptyMsg.style.display = 'block';
     } else {
       emptyMsg.style.display = 'none';
-      modules.modules.forEach(module => {
+      modulesData.modules.forEach(module => {
         const card = createModuleCard(module);
         container.appendChild(card);
       });
@@ -351,7 +445,6 @@ function setupEditModuleModal(token) {
       return res.json();
     })
     .then(() => {
-      // Найти и обновить карточку
       const card = document.querySelector(`[data-module-id="${currentEditingModuleId}"]`);
       if (card) {
         const title = card.querySelector('.card-title');
@@ -367,7 +460,6 @@ function setupEditModuleModal(token) {
     });
   };
 
-  // Функция для открытия модалки из createModuleCard
   window.openEditModuleModal = openEditModal;
 }
 
@@ -400,7 +492,7 @@ function setupNavigation() {
     });
   }
 
-  ['main-btn', 'modules-btn', 'categories-btn', 'results-btn'].forEach(id => {
+  ['main-btn', 'modules-btn', 'categories-btn', 'selected-btn', 'results-btn'].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener('click', () => window.location.href = `/static/${id.replace('-btn', '.html')}`);
   });
@@ -419,6 +511,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const myUserData = await loadUserName(token);
   window.myId = myUserData?.user?.id;
   
+  await loadFavoriteModules(token);
   loadModules(token, userId, window.myId);
   setupModal(token);
   setupEditModuleModal(token);

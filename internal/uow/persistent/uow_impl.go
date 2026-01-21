@@ -19,6 +19,7 @@ type UnitOfWorkImpl struct {
 	cardsResultsRepoWrite           repo.CardsResultsRepoWrite
 	modulesResultsRepoWrite         repo.ModulesResultsRepoWrite
 	categoryModulesResultsRepoWrite repo.CategoryModulesResultsRepoWrite
+	selectedRepoWrite               repo.SelectedRepoWrite
 
 	userRepoRead                   repo.UsersRepoRead
 	cardRepoRead                   repo.CardRepoRead
@@ -29,6 +30,7 @@ type UnitOfWorkImpl struct {
 	cardsResultsRepoRead           repo.CardsResultsRepoRead
 	modulesResultsRepoRead         repo.ModulesResultsRepoRead
 	categoryModulesResultsRepoRead repo.CategoryModulesResultsRepoRead
+	selectedRepoRead               repo.SelectedRepoRead
 }
 
 func NewUnitOfWork(db *sql.DB) *UnitOfWorkImpl {
@@ -53,6 +55,7 @@ func (uow *UnitOfWorkImpl) Begin() error {
 	cardsResultsRepo := persistent.NewCardsResultsRepo(tx)
 	modulesResultsRepo := persistent.NewModulesResultsRepo(tx)
 	categoryModulesResultsRepo := persistent.NewCategoryModulesResultsRepo(tx)
+	selectedRepo := persistent.NewSelectedRepo(tx)
 
 	uow.userRepoRead = userRepo
 	uow.userRepoWrite = userRepo
@@ -72,6 +75,8 @@ func (uow *UnitOfWorkImpl) Begin() error {
 	uow.modulesResultsRepoWrite = modulesResultsRepo
 	uow.categoryModulesResultsRepoRead = categoryModulesResultsRepo
 	uow.categoryModulesResultsRepoWrite = categoryModulesResultsRepo
+	uow.selectedRepoRead = selectedRepo
+	uow.selectedRepoWrite = selectedRepo
 
 	return nil
 }
@@ -133,6 +138,10 @@ func (uow *UnitOfWorkImpl) GetCategoryModulesResultsRepoWriter() repo.CategoryMo
 	return uow.categoryModulesResultsRepoWrite
 }
 
+func (uow *UnitOfWorkImpl) GetSelectedRepoWriter() repo.SelectedRepoWrite {
+	return uow.selectedRepoWrite
+}
+
 func (uow *UnitOfWorkImpl) GetUsersRepoReader() repo.UsersRepoRead {
 	return uow.userRepoRead
 }
@@ -167,4 +176,8 @@ func (uow *UnitOfWorkImpl) GetModulesResultsRepoReader() repo.ModulesResultsRepo
 
 func (uow *UnitOfWorkImpl) GetCategoryModulesResultsRepoReader() repo.CategoryModulesResultsRepoRead {
 	return uow.categoryModulesResultsRepoRead
+}
+
+func (uow *UnitOfWorkImpl) GetSelectedRepoReader() repo.SelectedRepoRead {
+	return uow.selectedRepoRead
 }

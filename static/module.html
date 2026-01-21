@@ -18,6 +18,7 @@
     <nav id="nav-panel">
         <h2>Панель навигации</h2>
         <button id="main-btn">Главная</button>
+        <button id="selected-btn">Избранное</button>
         <button id="modules-btn">Модули</button>
         <button id="categories-btn">Категории</button>
         <button id="results-btn">Результаты</button>
@@ -35,6 +36,9 @@
                 <div class="action-buttons">
                     <button id="study-module-btn" class="primary-btn study-btn">Начать заучивание</button>
                     <button id="test-module-btn" class="primary-btn test-btn">Начать тестирование</button>
+                    <button id="toggle-favorite-btn" class="primary-btn favorite-btn" title="Добавить в избранное">
+                        <span id="favorite-text">Добавить в избранное</span>
+                    </button>
                 </div>
             </div>
 
@@ -49,10 +53,12 @@
                     <span id="toggle-type-text">Сделать закрытым</span>
                     </button>
                     <button id="edit-module-btn" class="primary-btn">Редактировать модуль</button>
+                    <button id="rename-module-btn" class="primary-btn">Переименовать модуль</button>
+                    <button id="delete-module-btn" class="primary-btn delete-module-btn">Удалить модуль</button>
                 </div>
             </div>
         </div>
-
+        
         <h2 class="section-subtitle">Содержание карточек</h2>
 
         <div id="cards-container" class="cards-container"></div>
@@ -116,6 +122,28 @@
         </div>
     </div>
 </div>
+
+<!-- Модальное окно переименования модуля -->
+<div id="renameModuleModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Переименовать модуль</h3>
+      <span id="closeRenameModal" class="close">&times;</span>
+    </div>
+    <div id="rename-error" class="error-message" style="display:none;"></div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label for="rename-module-input">Новое название модуля</label>
+        <input type="text" id="rename-module-input" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="confirm-rename-btn" class="primary-btn" disabled>Переименовать</button>
+      <button id="cancel-rename-modal" class="secondary-btn">Отмена</button>
+    </div>
+  </div>
+</div>
+
 
 <script src="module_script.js"></script>
 </body>

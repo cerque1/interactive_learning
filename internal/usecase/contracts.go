@@ -71,3 +71,14 @@ type Results interface {
 	DeleteModuleResult(resultId int) error
 	DeleteCategoryResultById(categoryResultId int) error
 }
+
+type Selected interface {
+	GetAllSelectedModulesByUser(userId int) ([]entity.Module, error)
+	GetAllSelectedCategoriesByUser(userId int) ([]entity.Category, error)
+	GetUsersCountToSelectedModule(moduleId int) (int, error)
+	GetUsersCountToSelectedCategory(categoryId int) (int, error)
+	InsertSelectedModuleToUser(userId, moduleId int) error
+	InsertSelectedCategoryToUser(userId, categoryId int) error
+	DeleteModuleToUser(userId, moduleId int) error
+	DeleteCategoryToUser(userId, categoryId int) error
+}

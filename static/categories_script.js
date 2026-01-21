@@ -1,6 +1,7 @@
 let isEditMode = false;
 let currentCards = [];
 let windowMyId = null;
+let favoriteCategories = new Set();
 
 const API_BASE_URL = window.location.origin;
 
@@ -29,18 +30,102 @@ function loadUserName(token) {
   .catch(() => null);
 }
 
+function toggleFavorite(categoryId, starBtn) {
+  const token = localStorage.getItem('token');
+  const isFilled = starBtn.classList.contains('filled');
+  
+  if (isFilled) {
+    // Удаляем из избранного
+    fetch(`${API_BASE_URL}/api/v1/selected/categories/delete?category_id=${categoryId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(res => {
+      if (res.status === 401) {
+        window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        return;
+      }
+      if (res.ok) {
+        starBtn.classList.remove('filled');
+        starBtn.title = 'Добавить в избранное';
+        favoriteCategories.delete(categoryId.toString());
+      } else {
+        alert('Ошибка удаления из избранного');
+      }
+    })
+    .catch(err => {
+      console.error('Ошибка:', err);
+      alert('Ошибка удаления из избранного');
+    });
+  } else {
+    // Добавляем в избранное
+    fetch(`${API_BASE_URL}/api/v1/selected/categories/insert?category_id=${categoryId}`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(res => {
+      if (res.status === 401) {
+        window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        return;
+      }
+      if (res.ok) {
+        starBtn.classList.add('filled');
+        starBtn.title = 'Убрать из избранного';
+        favoriteCategories.add(categoryId.toString());
+      } else {
+        alert('Ошибка добавления в избранное');
+      }
+    })
+    .catch(err => {
+      console.error('Ошибка:', err);
+      alert('Ошибка добавления в избранное');
+    });
+  }
+}
+
+function loadFavoriteCategories(token) {
+  return fetch(`${API_BASE_URL}/api/v1/selected/categories/`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  .then(res => {
+    if (res.status === 401) {
+      window.location.href = `/static/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+      return [];
+    }
+    if (!res.ok) return [];
+    return res.json();
+  })
+  .then(data => {
+    favoriteCategories.clear();
+    if (data.selected_categories?.length) {
+      data.selected_categories.forEach(category => {
+        favoriteCategories.add(category.id.toString());
+      });
+    }
+  })
+  .catch(() => {
+    favoriteCategories.clear();
+  });
+}
+
 function createCategoryCard(category) {
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.categoryId = category.id;
   card.style.cursor = 'pointer';
   
-  const privacyType = category.type === 0 ? 'public' : 'private';
   const privacyText = category.type === 0 ? 'Открытая' : 'Приватная';
+  const privacyClass = category.type === 0 ? 'public' : 'private';
+  const isFavorite = favoriteCategories.has(category.id.toString());
   
   card.innerHTML = `
     <div class="card-header">
-      <div class="category-type ${privacyType}">${privacyText}</div>
+      <span class="category-type ${privacyClass}">${privacyText}</span>
+      <button class="star-favorite ${isFavorite ? 'filled' : ''}" 
+              title="${isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}">⭐</button>
     </div>
     <div class="card-title">${category.name}</div>
     <div class="card-actions">
@@ -49,6 +134,13 @@ function createCategoryCard(category) {
     </div>
   `;
   
+  // Звездочка избранного
+  const starBtn = card.querySelector('.star-favorite');
+  starBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFavorite(category.id, starBtn);
+  });
+
   const deleteBtn = card.querySelector('.delete');
   deleteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -64,7 +156,7 @@ function createCategoryCard(category) {
   });
 
   card.addEventListener('click', (e) => {
-    if (!e.target.closest('.category-action-btn')) {
+    if (!e.target.closest('.category-action-btn') && !e.target.closest('.star-favorite')) {
       window.location.href = `/static/category.html?category_id=${category.id}`;
     }
   });
@@ -99,6 +191,7 @@ function handleDeleteCategory(categoryId, cardElement) {
     setTimeout(() => {
       cardElement.remove();
       currentCards = currentCards.filter(c => c !== cardElement);
+      favoriteCategories.delete(categoryId.toString());
       checkEmptyState();
     }, 300);
   })
@@ -118,11 +211,8 @@ function checkEmptyState() {
   }
 }
 
-async function loadCategories(token, userId, myId) {
-  let userid = myId
-  if (userId) {
-    userid = userId
-  } 
+function loadCategories(token, userId, myId) {
+  let userid = myId || userId;
   const url = `${API_BASE_URL}/api/v1/category/to_user/${userid}`;
 
   currentCards = [];
@@ -138,7 +228,7 @@ async function loadCategories(token, userId, myId) {
     if (!res.ok) throw new Error('Network error');
     return res.json();
   })
-  .then(categories => {
+  .then(categoriesData => {
     const container = document.getElementById('categories-container');
     const emptyMsg = document.getElementById('categories-empty');
     const pageTitle = document.getElementById('page-title');
@@ -146,11 +236,11 @@ async function loadCategories(token, userId, myId) {
     container.innerHTML = '';
     currentCards = [];
     
-    if (!categories?.categories?.length) {
+    if (!categoriesData.categories?.length) {
       emptyMsg.style.display = 'block';
     } else {
       emptyMsg.style.display = 'none';
-      categories.categories.forEach(category => {
+      categoriesData.categories.forEach(category => {
         const card = createCategoryCard(category);
         container.appendChild(card);
       });
@@ -240,17 +330,15 @@ async function loadModulesForModal(token, userId) {
     checkbox.type = 'checkbox';
     checkbox.className = 'module-checkbox';
     checkbox.dataset.moduleId = module.id;
-    checkbox.id = `module-${module.id}`; // ✅ Уникальный ID без index
+    checkbox.id = `module-${module.id}`;
     
     const span = document.createElement('span');
     span.textContent = `${module.name} (${module.cards_count || module.cards?.length || 0} карточек)`;
     
-    // ✅ Правильный порядок: checkbox -> span
     label.appendChild(checkbox);
     label.appendChild(span);
-    label.htmlFor = checkbox.id; // ✅ Правильная связь label с checkbox
+    label.htmlFor = checkbox.id;
     
-    // ✅ Предотвращаем всплытие для модального окна
     label.addEventListener('click', (e) => {
       e.stopPropagation();
     });
@@ -441,7 +529,8 @@ function setupModal(token, userId, myId) {
       const container = document.getElementById('categories-container');
       const newCard = createCategoryCard({ 
         id: newCategory.new_id, 
-        name 
+        name,
+        type: 1 
       });
       container.appendChild(newCard);
       document.getElementById('categories-empty').style.display = 'none';
@@ -480,7 +569,7 @@ function setupNavigation() {
     });
   }
 
-  ['main-btn', 'modules-btn', 'categories-btn', 'results-btn'].forEach(id => {
+  ['main-btn', 'modules-btn', 'categories-btn', 'selected-btn', 'results-btn'].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener('click', () => window.location.href = `/static/${id.replace('-btn', '.html')}`);
   });
@@ -507,6 +596,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const myUserData = await loadUserName(token);
   windowMyId = myUserData?.user?.id;
   
+  // Загружаем избранные категории ПЕРЕД загрузкой категорий
+  await loadFavoriteCategories(token);
   loadCategories(token, userId, windowMyId);
   setupModal(token, userId, windowMyId);
   setupEditCategoryModal(token);
