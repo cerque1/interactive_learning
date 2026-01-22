@@ -1,6 +1,7 @@
 package persistent
 
 import (
+	"database/sql"
 	"errors"
 	"interactive_learning/internal/entity"
 	"interactive_learning/internal/repo"
@@ -17,7 +18,7 @@ func NewResultsRepo(psql repo.PSQL) *ResultsRepo {
 func (rr *ResultsRepo) GetResultsByOwner(ownerId int) ([]entity.Result, error) {
 	rows, err := rr.psql.Query("SELECT * FROM results WHERE owner = $1", ownerId)
 	if err != nil {
-		return []entity.Result{}, err
+		return []entity.Result{}, repo.NewDBError("results", "select", err)
 	}
 	defer rows.Close()
 
@@ -27,7 +28,7 @@ func (rr *ResultsRepo) GetResultsByOwner(ownerId int) ([]entity.Result, error) {
 		err = rows.Scan(&r.Id,
 			&r.Type)
 		if err != nil {
-			return []entity.Result{}, err
+			return []entity.Result{}, repo.NewDBError("results", "select", err)
 		}
 		results = append(results, r)
 	}
@@ -41,7 +42,10 @@ func (rr *ResultsRepo) GetResultById(id int) (entity.Result, error) {
 	err := row.Scan(&r.Id,
 		&r.Type)
 	if err != nil {
-		return entity.Result{}, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.Result{}, repo.NoSuchRecordToSelect
+		}
+		return entity.Result{}, repo.NewDBError("results", "select", err)
 	}
 	return r, nil
 }
@@ -51,7 +55,10 @@ func (rr *ResultsRepo) GetLastInsertedResultId() (int, error) {
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
-		return -1, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return -1, repo.NoSuchRecordToSelect
+		}
+		return -1, repo.NewDBError("results", "select", err)
 	}
 	return id, nil
 }
@@ -60,18 +67,20 @@ func (rr *ResultsRepo) InsertResult(result entity.Result) error {
 	res, err := rr.psql.Exec("INSERT INTO results(type) "+
 		"VALUES($1)", result.Type)
 	if err != nil {
-		return err
+		return repo.NewDBError("results", "insert", err)
 	}
 	if count, _ := res.RowsAffected(); count == 0 {
-		return errors.New("insert result error")
+		return repo.InsertRecordError
 	}
 	return nil
 }
 
 func (rr *ResultsRepo) DeleteResultById(id int) error {
-	_, err := rr.psql.Exec("DELETE FROM results WHERE id = $1", id)
+	result, err := rr.psql.Exec("DELETE FROM results WHERE id = $1", id)
 	if err != nil {
-		return err
+		return repo.NewDBError("results", "delete", err)
+	} else if count, _ := result.RowsAffected(); count < 1 {
+		return repo.NoSuchRecordToDelete
 	}
 	return nil
 }

@@ -1,7 +1,6 @@
 package persistent
 
 import (
-	"errors"
 	"interactive_learning/internal/entity"
 	"interactive_learning/internal/repo"
 )
@@ -18,7 +17,7 @@ func (cmr *CategoryModulesRepo) GetModulesToCategory(categoryId int) ([]entity.M
 	rows, err := cmr.psql.Query("SELECT id, name, owner_id, type FROM category_modules LEFT JOIN modules ON modules.id = category_modules.module_id "+
 		"WHERE category_id = $1", categoryId)
 	if err != nil {
-		return []entity.Module{}, err
+		return []entity.Module{}, repo.NewDBError("category_modules", "select", err)
 	}
 
 	modules := []entity.Module{}
@@ -26,7 +25,7 @@ func (cmr *CategoryModulesRepo) GetModulesToCategory(categoryId int) ([]entity.M
 		m := entity.Module{}
 		err := rows.Scan(&m.Id, &m.Name, &m.OwnerId, &m.Type)
 		if err != nil {
-			return []entity.Module{}, err
+			return []entity.Module{}, repo.NewDBError("category_modules", "select", err)
 		}
 		modules = append(modules, m)
 	}
@@ -38,7 +37,7 @@ func (cmr *CategoryModulesRepo) GetCategoriesContainsModule(moduleId int) ([]ent
 	rows, err := cmr.psql.Query("SELECT id, name, owner_id, type FROM category_modules LEFT JOIN categories ON categories.id = category_modules.category_id "+
 		"WHERE module_id = $1", moduleId)
 	if err != nil {
-		return []entity.Category{}, err
+		return []entity.Category{}, repo.NewDBError("category_modules", "select", err)
 	}
 
 	categories := []entity.Category{}
@@ -46,7 +45,7 @@ func (cmr *CategoryModulesRepo) GetCategoriesContainsModule(moduleId int) ([]ent
 		c := entity.Category{}
 		err := rows.Scan(&c.Id, &c.Name, &c.OwnerId, &c.Type)
 		if err != nil {
-			return []entity.Category{}, err
+			return []entity.Category{}, repo.NewDBError("category_modules", "select", err)
 		}
 		categories = append(categories, c)
 	}
@@ -58,19 +57,21 @@ func (cmr *CategoryModulesRepo) InsertModulesToCategory(categoryId, moduleId int
 	result, err := cmr.psql.Exec("INSERT INTO category_modules(category_id, module_id) "+
 		"VALUES($1, $2)", categoryId, moduleId)
 	if err != nil {
-		return err
+		return repo.NewDBError("category_modules", "insert", err)
 	}
 	if count, _ := result.RowsAffected(); count == 0 {
-		return errors.New("insert module to category error")
+		return repo.InsertRecordError
 	}
 	return nil
 }
 
 func (cmr *CategoryModulesRepo) DeleteModuleFromCategory(categoryId, moduleId int) error {
-	_, err := cmr.psql.Exec("DELETE FROM category_modules "+
+	result, err := cmr.psql.Exec("DELETE FROM category_modules "+
 		"WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
 	if err != nil {
-		return err
+		return repo.NewDBError("category_modules", "delete", err)
+	} else if count, _ := result.RowsAffected(); count < 1 {
+		return repo.NoSuchRecordToDelete
 	}
 	return nil
 }
@@ -79,7 +80,7 @@ func (cmr *CategoryModulesRepo) DeleteAllModulesFromCategory(categoryId int) err
 	_, err := cmr.psql.Exec("DELETE FROM category_modules "+
 		"WHERE category_id = $1", categoryId)
 	if err != nil {
-		return err
+		return repo.NewDBError("category_modules", "delete", err)
 	}
 	return nil
 }
@@ -88,7 +89,7 @@ func (cmr *CategoryModulesRepo) DeleteModuleFromCategories(moduleId int) error {
 	_, err := cmr.psql.Exec("DELETE FROM category_modules "+
 		"WHERE module_id = $1", moduleId)
 	if err != nil {
-		return err
+		return repo.NewDBError("category_modules", "delete", err)
 	}
 	return nil
 }

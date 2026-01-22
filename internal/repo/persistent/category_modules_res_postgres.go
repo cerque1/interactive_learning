@@ -1,7 +1,6 @@
 package persistent
 
 import (
-	"errors"
 	"interactive_learning/internal/entity"
 	"interactive_learning/internal/repo"
 	"time"
@@ -21,7 +20,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]e
 		"WHERE category_res.\"owner\" = $1 "+
 		"ORDER BY category_res.category_result_id", ownerId)
 	if err != nil {
-		return []entity.CategoryModulesResult{}, err
+		return []entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 	}
 
 	categoryRes := map[int]entity.CategoryModulesResult{}
@@ -39,7 +38,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]e
 			&moduleRes.Result.Id,
 			&moduleRes.Result.Type)
 		if err != nil {
-			return []entity.CategoryModulesResult{}, err
+			return []entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 		}
 
 		if first {
@@ -47,7 +46,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]e
 			oneCategoryRes.CategoryId = tempCategoryId
 			parseTime, err := time.Parse(time.RFC3339, tempTime)
 			if err != nil {
-				return []entity.CategoryModulesResult{}, err
+				return []entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 			}
 			oneCategoryRes.Time = parseTime
 
@@ -59,7 +58,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoriesResByOwner(ownerId int) ([]e
 
 			parseTime, err := time.Parse(time.RFC3339, tempTime)
 			if err != nil {
-				return []entity.CategoryModulesResult{}, err
+				return []entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 			}
 			oneCategoryRes = entity.CategoryModulesResult{CategoryResultId: tempResId, CategoryId: tempCategoryId, Owner: ownerId, Time: parseTime}
 		}
@@ -83,7 +82,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoryResById(categoryResultsId int)
 		"FROM category_res INNER JOIN results ON category_res.result_id = results.id "+
 		"WHERE category_result_id = $1", categoryResultsId)
 	if err != nil {
-		return entity.CategoryModulesResult{}, err
+		return entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 	}
 
 	categoryRes := entity.CategoryModulesResult{CategoryResultId: categoryResultsId}
@@ -99,7 +98,7 @@ func (cmr *CategoryModulesResultsRepo) GetCategoryResById(categoryResultsId int)
 			&moduleRes.Result.Id,
 			&moduleRes.Result.Type)
 		if err != nil {
-			return entity.CategoryModulesResult{}, err
+			return entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 		}
 		if first {
 			categoryRes.CategoryId = tempCategoryId
@@ -119,7 +118,7 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryOwner(categoryId, use
 		"WHERE category_id = $1 AND category_res.owner = $2 "+
 		"ORDER BY category_res.category_result_id", categoryId, userId)
 	if err != nil {
-		return []entity.CategoryModulesResult{}, err
+		return []entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 	}
 
 	categoryRes := map[int]entity.CategoryModulesResult{}
@@ -135,14 +134,14 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryOwner(categoryId, use
 			&moduleRes.Result.Id,
 			&moduleRes.Result.Type)
 		if err != nil {
-			return []entity.CategoryModulesResult{}, err
+			return []entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 		}
 
 		if first {
 			oneCategoryRes.CategoryResultId = tempResId
 			parseTime, err := time.Parse(time.RFC3339, tempTime)
 			if err != nil {
-				return []entity.CategoryModulesResult{}, err
+				return []entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 			}
 			oneCategoryRes.Time = parseTime
 
@@ -154,7 +153,7 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryOwner(categoryId, use
 
 			parseTime, err := time.Parse(time.RFC3339, tempTime)
 			if err != nil {
-				return []entity.CategoryModulesResult{}, err
+				return []entity.CategoryModulesResult{}, repo.NewDBError("category_res", "select", err)
 			}
 			oneCategoryRes = entity.CategoryModulesResult{CategoryResultId: tempResId, CategoryId: categoryId, Owner: userId, Time: parseTime}
 		}
@@ -178,7 +177,7 @@ func (cmr *CategoryModulesResultsRepo) GetLastInsertedResId() (int, error) {
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
-		return -1, err
+		return -1, repo.NewDBError("category_res", "select", err)
 	}
 	return id, nil
 }
@@ -186,14 +185,14 @@ func (cmr *CategoryModulesResultsRepo) GetLastInsertedResId() (int, error) {
 func (cmr *CategoryModulesResultsRepo) GetResultsByModuleId(moduleId int) ([]int, error) {
 	rows, err := cmr.psql.Query("SELECT result_id FROM category_res WHERE module_id = $1", moduleId)
 	if err != nil {
-		return []int{}, err
+		return []int{}, repo.NewDBError("category_res", "select", err)
 	}
 
 	ids := []int{}
 	for rows.Next() {
 		var id int
 		if err = rows.Scan(&id); err != nil {
-			return []int{}, err
+			return []int{}, repo.NewDBError("category_res", "select", err)
 		}
 
 		ids = append(ids, id)
@@ -204,14 +203,14 @@ func (cmr *CategoryModulesResultsRepo) GetResultsByModuleId(moduleId int) ([]int
 func (cmr *CategoryModulesResultsRepo) GetResultsByCategoryAndModule(categoryId, moduleId int) ([]int, error) {
 	rows, err := cmr.psql.Query("SELECT result_id FROM category_res WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
 	if err != nil {
-		return []int{}, err
+		return []int{}, repo.NewDBError("category_res", "select", err)
 	}
 
 	ids := []int{}
 	for rows.Next() {
 		var id int
 		if err = rows.Scan(&id); err != nil {
-			return []int{}, err
+			return []int{}, repo.NewDBError("category_res", "select", err)
 		}
 
 		ids = append(ids, id)
@@ -223,10 +222,10 @@ func (cmr *CategoryModulesResultsRepo) InsertCategoryModule(categoryResultId, ca
 	res, err := cmr.psql.Exec("INSERT INTO category_res(category_result_id, category_id, module_id, result_id, owner, time) "+
 		"VALUES($1, $2, $3, $4, $5, $6)", categoryResultId, categoryId, moduleId, resultId, ownerId, time)
 	if err != nil {
-		return err
+		return repo.InsertRecordError
 	}
 	if count, _ := res.RowsAffected(); count == 0 {
-		return errors.New("insert category result error")
+		return repo.InsertRecordError
 	}
 	return nil
 }
@@ -234,15 +233,16 @@ func (cmr *CategoryModulesResultsRepo) InsertCategoryModule(categoryResultId, ca
 func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategories(moduleId int) error {
 	_, err := cmr.psql.Exec("DELETE FROM category_res WHERE module_id = $1", moduleId)
 	if err != nil {
-		return err
+		return repo.NoSuchRecordToDelete
 	}
 	return nil
 }
 
+// rename method
 func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategory(categoryId, moduleId int) error {
 	_, err := cmr.psql.Exec("DELETE FROM category_res WHERE category_id = $1 AND module_id = $2", categoryId, moduleId)
 	if err != nil {
-		return err
+		return repo.NoSuchRecordToDelete
 	}
 	return nil
 }
@@ -250,7 +250,7 @@ func (cmr *CategoryModulesResultsRepo) DeleteModulesFromCategory(categoryId, mod
 func (cmr *CategoryModulesResultsRepo) DeleteAllToCategory(categoryId int) error {
 	_, err := cmr.psql.Exec("DELETE FROM category_res WHERE category_id = $1", categoryId)
 	if err != nil {
-		return err
+		return repo.NoSuchRecordToDelete
 	}
 	return nil
 }
@@ -258,7 +258,7 @@ func (cmr *CategoryModulesResultsRepo) DeleteAllToCategory(categoryId int) error
 func (cmr *CategoryModulesResultsRepo) DeleteResultById(categoryResultId int) error {
 	_, err := cmr.psql.Exec("DELETE FROM category_res WHERE category_result_id = $1", categoryResultId)
 	if err != nil {
-		return err
+		return repo.NoSuchRecordToDelete
 	}
 	return nil
 }

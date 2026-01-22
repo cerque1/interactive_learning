@@ -6,6 +6,7 @@ import (
 	"embed"
 	"fmt"
 	"interactive_learning/internal/infrastructure"
+	errors_mapper "interactive_learning/internal/mappers/errors"
 	"interactive_learning/internal/migrator"
 	"interactive_learning/internal/repo/persistent"
 	"interactive_learning/internal/uow"
@@ -64,9 +65,12 @@ func Run(migrationsDir string, migrationsFS embed.FS, pathToStatic string) {
 		log.Fatal("database not ready")
 	}
 
+	errors_mapper := errors_mapper.NewDomainErrorsMapper()
+
 	us := interactivelearning.New(func() uow.UnitOfWork {
 		return uowPersistent.NewUnitOfWork(db)
 	},
+		persistent.NewTokenStorage(),
 		persistent.NewUsersRepo(db),
 		persistent.NewCardsRepo(db),
 		persistent.NewModulesRepo(db),
@@ -76,7 +80,9 @@ func Run(migrationsDir string, migrationsFS embed.FS, pathToStatic string) {
 		persistent.NewCardsResultsRepo(db),
 		persistent.NewModulesResultsRepo(db),
 		persistent.NewCategoryModulesResultsRepo(db),
-		persistent.NewSelectedRepo(db))
+		persistent.NewSelectedRepo(db),
+		errors_mapper,
+	)
 	e := infrastructure.NewEcho(pathToStatic, us, us, us, us, us, us, us, us)
 
 	e.Use(middleware.Recover())

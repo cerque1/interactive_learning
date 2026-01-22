@@ -1,6 +1,7 @@
 package persistent
 
 import (
+	"database/sql"
 	"errors"
 	"interactive_learning/internal/entity"
 	"interactive_learning/internal/repo"
@@ -18,14 +19,14 @@ func (mr *ModulesRepo) GetModulesWithSimilarName(name string, limit, offset int)
 	name = "%" + name + "%"
 	rows, err := mr.psql.Query("SELECT modules.id, modules.name, modules.owner_id, modules.type FROM modules WHERE name LIKE $1 LIMIT $2 OFFSET $3", name, limit, offset)
 	if err != nil {
-		return []entity.Module{}, err
+		return []entity.Module{}, repo.NewDBError("modules", "select", err)
 	}
 
 	modules := []entity.Module{}
 	for rows.Next() {
 		m := entity.Module{}
 		if err = rows.Scan(&m.Id, &m.Name, &m.OwnerId, &m.Type); err != nil {
-			return []entity.Module{}, err
+			return []entity.Module{}, repo.NewDBError("modules", "select", err)
 		}
 		modules = append(modules, m)
 	}
@@ -36,7 +37,7 @@ func (mr *ModulesRepo) GetModulesWithSimilarName(name string, limit, offset int)
 func (mr *ModulesRepo) GetModulesByUser(userId int) ([]entity.Module, error) {
 	rows, err := mr.psql.Query("SELECT * FROM modules WHERE owner_id = $1", userId)
 	if err != nil {
-		return []entity.Module{}, err
+		return []entity.Module{}, repo.NewDBError("modules", "select", err)
 	}
 
 	modules := []entity.Module{}
@@ -44,7 +45,7 @@ func (mr *ModulesRepo) GetModulesByUser(userId int) ([]entity.Module, error) {
 		m := entity.Module{}
 		err = rows.Scan(&m.Id, &m.Name, &m.OwnerId, &m.Type)
 		if err != nil {
-			return []entity.Module{}, err
+			return []entity.Module{}, repo.NewDBError("modules", "select", err)
 		}
 		modules = append(modules, m)
 	}
@@ -56,7 +57,10 @@ func (cr *ModulesRepo) GetModuleById(moduleId int) (entity.Module, error) {
 	m := entity.Module{}
 	err := row.Scan(&m.Id, &m.Name, &m.OwnerId, &m.Type)
 	if err != nil {
-		return entity.Module{}, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.Module{}, repo.NoSuchRecordToSelect
+		}
+		return entity.Module{}, repo.NewDBError("modules", "select", err)
 	}
 	return m, nil
 }
@@ -66,7 +70,10 @@ func (mr *ModulesRepo) GetLastInsertedModuleId() (int, error) {
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
-		return -1, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return -1, repo.NoSuchRecordToSelect
+		}
+		return -1, repo.NewDBError("modules", "select", err)
 	}
 	return id, nil
 }
@@ -76,7 +83,10 @@ func (mr *ModulesRepo) GetModuleOwnerId(moduleId int) (int, error) {
 	var id int
 	err := row.Scan(&id)
 	if err != nil {
-		return -1, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return -1, repo.NoSuchRecordToSelect
+		}
+		return -1, repo.NewDBError("modules", "select", err)
 	}
 	return id, nil
 }
@@ -89,7 +99,7 @@ func (mr *ModulesRepo) GetPopularModules(limit, offset int) ([]entity.PopularMod
 		"ORDER BY count "+
 		"LIMIT $1 OFFSET $2;", limit, offset)
 	if err != nil {
-		return []entity.PopularModule{}, nil
+		return []entity.PopularModule{}, repo.NewDBError("modules", "select", err)
 	}
 
 	modules := []entity.PopularModule{}
@@ -97,7 +107,7 @@ func (mr *ModulesRepo) GetPopularModules(limit, offset int) ([]entity.PopularMod
 		m := entity.PopularModule{}
 		err = rows.Scan(&m.Mod.Id, &m.Mod.Name, &m.Mod.OwnerId, &m.Mod.Type, &m.Count)
 		if err != nil {
-			return []entity.PopularModule{}, nil
+			return []entity.PopularModule{}, repo.NewDBError("modules", "select", err)
 		}
 		modules = append(modules, m)
 	}
@@ -109,10 +119,10 @@ func (mr *ModulesRepo) InsertModule(module entity.ModuleToCreate) error {
 	result, err := mr.psql.Exec("INSERT INTO modules(name, owner_id, type) "+
 		"VALUES($1, $2, $3)", module.Name, module.OwnerId, module.Type)
 	if err != nil {
-		return err
+		return repo.NewDBError("modules", "insert", err)
 	}
 	if count, _ := result.RowsAffected(); count == 0 {
-		return errors.New("insert module error")
+		return repo.InsertRecordError
 	}
 	return nil
 }
@@ -122,9 +132,9 @@ func (mr *ModulesRepo) RenameModule(moduleId int, newName string) error {
 		"SET name = $1 "+
 		"WHERE id = $2", newName, moduleId)
 	if err != nil {
-		return err
+		return repo.NewDBError("modules", "update", err)
 	} else if count, _ := result.RowsAffected(); count == 0 {
-		return errors.New("rename module error")
+		return repo.NoSuchRecordToUpdate
 	}
 	return nil
 }
@@ -134,17 +144,19 @@ func (mr *ModulesRepo) UpdateModuleType(moduleId, newType int) error {
 		"SET type = $1 "+
 		"WHERE id = $2", newType, moduleId)
 	if err != nil {
-		return err
+		return repo.NewDBError("modules", "update", err)
 	} else if count, _ := result.RowsAffected(); count == 0 {
-		return errors.New("rename module error")
+		return repo.NoSuchRecordToUpdate
 	}
 	return nil
 }
 
 func (mr *ModulesRepo) DeleteModule(moduleId int) error {
-	_, err := mr.psql.Exec("DELETE FROM modules WHERE id = $1", moduleId)
+	result, err := mr.psql.Exec("DELETE FROM modules WHERE id = $1", moduleId)
 	if err != nil {
-		return err
+		return repo.NewDBError("modules", "delete", err)
+	} else if count, _ := result.RowsAffected(); count < 0 {
+		return repo.NoSuchRecordToDelete
 	}
 	return nil
 }

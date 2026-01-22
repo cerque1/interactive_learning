@@ -1,7 +1,7 @@
 package persistent
 
 import (
-	"errors"
+	"interactive_learning/internal/repo"
 	"interactive_learning/internal/utils/pair"
 	"interactive_learning/internal/utils/tokengenerator"
 	"sync"
@@ -50,7 +50,7 @@ func (t *TokenStorage) DeleteTokenToUser(id int) error {
 	token, ok := t.userIdToToken[id]
 
 	if !ok {
-		return errors.New("no such user to delete token")
+		return repo.NoSuchRecordToDelete
 	}
 
 	delete(t.userIdToToken, id)
@@ -65,9 +65,9 @@ func (t *TokenStorage) IsValidToken(token tokengenerator.Token) (int, error) {
 
 	userId, ok := t.tokenToUserId[token]
 	if !ok {
-		return -1, errors.New("invalid token")
+		return -1, repo.InvalidToken
 	} else if time.Until(t.userIdToToken[userId].Second).Hours() < -1 {
-		return -1, errors.New("token is expired")
+		return -1, repo.ExpiredToken
 	}
 
 	return userId, nil

@@ -1,6 +1,7 @@
 package persistent
 
 import (
+	"database/sql"
 	"errors"
 	"interactive_learning/internal/entity"
 	"interactive_learning/internal/repo"
@@ -25,7 +26,10 @@ func (mrr *ModulesResultsRepo) GetModulesResultById(resultId int) (entity.Module
 		&moduleRes.Time,
 		&moduleRes.Owner,
 		&moduleRes.Result.Type); err != nil {
-		return entity.ModuleResult{}, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.ModuleResult{}, repo.NoSuchRecordToSelect
+		}
+		return entity.ModuleResult{}, repo.NewDBError("modules_res", "select", err)
 	}
 	return moduleRes, nil
 }
@@ -35,7 +39,7 @@ func (mrr *ModulesResultsRepo) GetModulesResByOwner(ownerId int) ([]entity.Modul
 		"FROM modules_res INNER JOIN results ON modules_res.result_id = results.id "+
 		"WHERE modules_res.\"owner\" = $1", ownerId)
 	if err != nil {
-		return []entity.ModuleResult{}, err
+		return []entity.ModuleResult{}, repo.NewDBError("modules_res", "select", err)
 	}
 
 	modules_results := []entity.ModuleResult{}
@@ -47,12 +51,12 @@ func (mrr *ModulesResultsRepo) GetModulesResByOwner(ownerId int) ([]entity.Modul
 			&mr.Result.Id,
 			&mr.Result.Type)
 		if err != nil {
-			return []entity.ModuleResult{}, err
+			return []entity.ModuleResult{}, repo.NewDBError("modules_res", "select", err)
 		}
 		modules_results = append(modules_results, mr)
 	}
 
-	return modules_results, err
+	return modules_results, nil
 }
 
 func (mrr *ModulesResultsRepo) GetResultsToModuleOwner(moduleId, ownerId int) ([]entity.ModuleResult, error) {
@@ -60,7 +64,7 @@ func (mrr *ModulesResultsRepo) GetResultsToModuleOwner(moduleId, ownerId int) ([
 		"FROM modules_res INNER JOIN results ON modules_res.result_id = results.id "+
 		"WHERE modules_res.module_id = $1 AND modules_res.owner = $2", moduleId, ownerId)
 	if err != nil {
-		return []entity.ModuleResult{}, err
+		return []entity.ModuleResult{}, repo.NewDBError("modules_res", "select", err)
 	}
 
 	modules_results := []entity.ModuleResult{}
@@ -71,12 +75,12 @@ func (mrr *ModulesResultsRepo) GetResultsToModuleOwner(moduleId, ownerId int) ([
 			&mr.Result.Id,
 			&mr.Result.Type)
 		if err != nil {
-			return []entity.ModuleResult{}, err
+			return []entity.ModuleResult{}, repo.NewDBError("modules_res", "select", err)
 		}
 		modules_results = append(modules_results, mr)
 	}
 
-	return modules_results, err
+	return modules_results, nil
 }
 
 func (mrr *ModulesResultsRepo) GetResultsToModule(moduleId int) ([]entity.ModuleResult, error) {
@@ -84,7 +88,7 @@ func (mrr *ModulesResultsRepo) GetResultsToModule(moduleId int) ([]entity.Module
 		"FROM modules_res INNER JOIN results ON modules_res.result_id = results.id "+
 		"WHERE modules_res.module_id = $1", moduleId)
 	if err != nil {
-		return []entity.ModuleResult{}, err
+		return []entity.ModuleResult{}, repo.NewDBError("modules_res", "select", err)
 	}
 
 	modules_results := []entity.ModuleResult{}
@@ -95,22 +99,22 @@ func (mrr *ModulesResultsRepo) GetResultsToModule(moduleId int) ([]entity.Module
 			&mr.Result.Id,
 			&mr.Result.Type)
 		if err != nil {
-			return []entity.ModuleResult{}, err
+			return []entity.ModuleResult{}, repo.NewDBError("modules_res", "select", err)
 		}
 		modules_results = append(modules_results, mr)
 	}
 
-	return modules_results, err
+	return modules_results, nil
 }
 
 func (mrr *ModulesResultsRepo) InsertResultToModule(moduleId, resultId, ownerId int, time time.Time) error {
 	res, err := mrr.psql.Exec("INSERT INTO modules_res(module_id, result_id, owner, time) "+
 		"VALUES($1, $2, $3, $4)", moduleId, resultId, ownerId, time)
 	if err != nil {
-		return err
+		return repo.NewDBError("modules_res", "insert", err)
 	}
 	if count, _ := res.RowsAffected(); count == 0 {
-		return errors.New("insert module result error")
+		return repo.InsertRecordError
 	}
 	return nil
 }
@@ -118,7 +122,7 @@ func (mrr *ModulesResultsRepo) InsertResultToModule(moduleId, resultId, ownerId 
 func (mrr *ModulesResultsRepo) DeleteResultsToModule(moduleId int) error {
 	_, err := mrr.psql.Exec("DELETE FROM modules_res WHERE module_id = $1", moduleId)
 	if err != nil {
-		return err
+		return repo.NewDBError("modules_res", "delete", err)
 	}
 	return nil
 }
@@ -126,7 +130,7 @@ func (mrr *ModulesResultsRepo) DeleteResultsToModule(moduleId int) error {
 func (mrr *ModulesResultsRepo) DeleteResultToModule(resultId int) error {
 	_, err := mrr.psql.Exec("DELETE FROM modules_res WHERE result_id = $1", resultId)
 	if err != nil {
-		return err
+		return repo.NewDBError("modules_res", "delete", err)
 	}
 	return nil
 }
