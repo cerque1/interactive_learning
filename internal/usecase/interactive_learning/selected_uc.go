@@ -1,11 +1,14 @@
 package interactivelearning
 
-import "interactive_learning/internal/entity"
+import (
+	"interactive_learning/internal/entity"
+	"interactive_learning/internal/usecase"
+)
 
 func (u *UseCase) GetAllSelectedModulesByUser(userId int) ([]entity.Module, error) {
 	modules, err := u.selectedRepoRead.GetAllSelectedModulesByUser(userId)
 	if err != nil {
-		return []entity.Module{}, err
+		return []entity.Module{}, u.errorsMapper.DBErrorToApp(err)
 	}
 
 	publicModules := []entity.Module{}
@@ -20,7 +23,7 @@ func (u *UseCase) GetAllSelectedModulesByUser(userId int) ([]entity.Module, erro
 func (u *UseCase) GetAllSelectedCategoriesByUser(userId int) ([]entity.Category, error) {
 	categories, err := u.selectedRepoRead.GetAllSelectedCategoriesByUser(userId)
 	if err != nil {
-		return []entity.Category{}, err
+		return []entity.Category{}, u.errorsMapper.DBErrorToApp(err)
 	}
 
 	publicCategories := []entity.Category{}
@@ -35,7 +38,7 @@ func (u *UseCase) GetAllSelectedCategoriesByUser(userId int) ([]entity.Category,
 func (u *UseCase) GetUsersCountToSelectedModule(moduleId int) (int, error) {
 	usersCount, err := u.selectedRepoRead.GetUsersCountToSelectedModule(moduleId)
 	if err != nil {
-		return -1, err
+		return -1, u.errorsMapper.DBErrorToApp(err)
 	}
 	return usersCount, nil
 }
@@ -43,7 +46,7 @@ func (u *UseCase) GetUsersCountToSelectedModule(moduleId int) (int, error) {
 func (u *UseCase) GetUsersCountToSelectedCategory(categoryId int) (int, error) {
 	usersCount, err := u.selectedRepoRead.GetUsersCountToSelectedCategory(categoryId)
 	if err != nil {
-		return -1, err
+		return -1, u.errorsMapper.DBErrorToApp(err)
 	}
 	return usersCount, nil
 }
@@ -51,55 +54,67 @@ func (u *UseCase) GetUsersCountToSelectedCategory(categoryId int) (int, error) {
 func (u *UseCase) InsertSelectedModuleToUser(userId, moduleId int) error {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
-		return err
+		return usecase.NewInternalError(err)
 	}
 	defer uow.Rollback()
 
 	if err := uow.GetSelectedRepoWriter().InsertSelectedModuleToUser(userId, moduleId); err != nil {
-		return err
+		return u.errorsMapper.DBErrorToApp(err)
 	}
 
-	return uow.Commit()
+	if err := uow.Commit(); err != nil {
+		return usecase.NewInternalError(err)
+	}
+	return nil
 }
 
 func (u *UseCase) InsertSelectedCategoryToUser(userId, categoryId int) error {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
-		return err
+		return usecase.NewInternalError(err)
 	}
 	defer uow.Rollback()
 
 	if err := uow.GetSelectedRepoWriter().InsertSelectedCategoryToUser(userId, categoryId); err != nil {
-		return err
+		return u.errorsMapper.DBErrorToApp(err)
 	}
 
-	return uow.Commit()
+	if err := uow.Commit(); err != nil {
+		return usecase.NewInternalError(err)
+	}
+	return nil
 }
 
 func (u *UseCase) DeleteModuleToUser(userId, moduleId int) error {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
-		return err
+		return usecase.NewInternalError(err)
 	}
 	defer uow.Rollback()
 
 	if err := uow.GetSelectedRepoWriter().DeleteModuleToUser(userId, moduleId); err != nil {
-		return err
+		return u.errorsMapper.DBErrorToApp(err)
 	}
 
-	return uow.Commit()
+	if err := uow.Commit(); err != nil {
+		return usecase.NewInternalError(err)
+	}
+	return nil
 }
 
 func (u *UseCase) DeleteCategoryToUser(userId, categoryId int) error {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
-		return err
+		return usecase.NewInternalError(err)
 	}
 	defer uow.Rollback()
 
 	if err := uow.GetSelectedRepoWriter().DeleteCategoryToUser(userId, categoryId); err != nil {
-		return err
+		return u.errorsMapper.DBErrorToApp(err)
 	}
 
-	return uow.Commit()
+	if err := uow.Commit(); err != nil {
+		return usecase.NewInternalError(err)
+	}
+	return nil
 }

@@ -1,19 +1,26 @@
 package interactivelearning
 
-import "interactive_learning/internal/entity"
+import (
+	"interactive_learning/internal/entity"
+	"interactive_learning/internal/usecase"
+)
 
 func (u *UseCase) GetUserByLogin(login string) (entity.User, error) {
 	return u.usersRepoRead.GetUserByLogin(login)
 }
 
 func (u *UseCase) GetUsersWithSimilarName(name string, limit, offset int) ([]entity.User, error) {
-	return u.usersRepoRead.GetUsersWithSimilarName(name, limit, offset)
+	users, err := u.usersRepoRead.GetUsersWithSimilarName(name, limit, offset)
+	if err != nil {
+		return nil, u.errorsMapper.DBErrorToApp(err)
+	}
+	return users, nil
 }
 
 func (u *UseCase) GetUserInfoById(ownerId int, isFull bool, userId int) (entity.User, error) {
 	user, err := u.usersRepoRead.GetUserInfoById(ownerId)
 	if err != nil {
-		return entity.User{}, err
+		return entity.User{}, u.errorsMapper.DBErrorToApp(err)
 	}
 
 	if !isFull {
@@ -39,13 +46,17 @@ func (u *UseCase) IsContainsLogin(login string) (bool, error) {
 	u.usersMutex.Lock()
 	defer u.usersMutex.Unlock()
 
-	return u.usersRepoRead.IsContainsLogin(login)
+	isContains, err := u.usersRepoRead.IsContainsLogin(login)
+	if err != nil {
+		return false, u.errorsMapper.DBErrorToApp(err)
+	}
+	return isContains, nil
 }
 
 func (u *UseCase) InsertUser(user entity.User) (int, error) {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
-		return -1, err
+		return -1, usecase.NewInternalError(err)
 	}
 	defer uow.Rollback()
 
@@ -54,15 +65,15 @@ func (u *UseCase) InsertUser(user entity.User) (int, error) {
 
 	err := uow.GetUsersRepoWriter().InsertUser(user)
 	if err != nil {
-		return -1, err
+		return -1, u.errorsMapper.DBErrorToApp(err)
 	}
 	newUser, err := uow.GetUsersRepoReader().GetUserByLogin(user.Login)
 	if err != nil {
-		return -1, err
+		return -1, u.errorsMapper.DBErrorToApp(err)
 	}
 
 	if err = uow.Commit(); err != nil {
-		return -1, err
+		return -1, usecase.NewInternalError(err)
 	}
 
 	return newUser.Id, nil

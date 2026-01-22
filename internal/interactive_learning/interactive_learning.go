@@ -65,7 +65,8 @@ func Run(migrationsDir string, migrationsFS embed.FS, pathToStatic string) {
 		log.Fatal("database not ready")
 	}
 
-	errors_mapper := errors_mapper.NewDomainErrorsMapper()
+	domainErrorsMapper := errors_mapper.NewDomainErrorsMapper()
+	applicationErrorsMapper := errors_mapper.NewApplicationErrorsMapper()
 
 	us := interactivelearning.New(func() uow.UnitOfWork {
 		return uowPersistent.NewUnitOfWork(db)
@@ -81,9 +82,9 @@ func Run(migrationsDir string, migrationsFS embed.FS, pathToStatic string) {
 		persistent.NewModulesResultsRepo(db),
 		persistent.NewCategoryModulesResultsRepo(db),
 		persistent.NewSelectedRepo(db),
-		errors_mapper,
+		domainErrorsMapper,
 	)
-	e := infrastructure.NewEcho(pathToStatic, us, us, us, us, us, us, us, us)
+	e := infrastructure.NewEcho(pathToStatic, us, us, us, us, us, us, us, us, applicationErrorsMapper)
 
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger())

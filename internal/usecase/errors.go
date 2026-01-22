@@ -23,6 +23,8 @@ func (nf *NotFoundRecordErr) Unwrap() error {
 	return NotFoundErr
 }
 
+var InternalErr = errors.New("internal server error")
+
 type InternalError struct {
 	Err error
 }
@@ -36,7 +38,7 @@ func (idbe *InternalError) Error() string {
 }
 
 func (idbe *InternalError) Unwrap() error {
-	return NotFoundErr
+	return InternalErr
 }
 
 var UnauthorizedErr = errors.New("Unauthorized user")
@@ -93,4 +95,23 @@ func (cte *ChangeTypeError) Error() string {
 
 func (cte *ChangeTypeError) Unwrap() error {
 	return ChangeTypeErr
+}
+
+var AlreadyExistsErr = errors.New("object is already exists")
+
+type AlreadyExistsError struct {
+	Object   string
+	ObjectId int
+}
+
+func NewAlreadyExistsError(object string, objectId int) *AlreadyExistsError {
+	return &AlreadyExistsError{Object: object, ObjectId: objectId}
+}
+
+func (ae *AlreadyExistsError) Error() string {
+	return fmt.Sprintf("error: %s is already exists with id %d", ae.Object, ae.ObjectId)
+}
+
+func (ae *AlreadyExistsError) Unwrap() error {
+	return AlreadyExistsErr
 }

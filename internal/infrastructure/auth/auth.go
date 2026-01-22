@@ -2,6 +2,7 @@ package auth
 
 import (
 	"interactive_learning/internal/entity"
+	errors_mapper "interactive_learning/internal/mappers/errors"
 	"interactive_learning/internal/usecase"
 	"interactive_learning/internal/utils/tokengenerator"
 	"log"
@@ -16,10 +17,12 @@ import (
 type AuthRoutes struct {
 	UsersUC  usecase.Users
 	TokensUC usecase.Tokens
+
+	errorsMapper *errors_mapper.ApplicationErrorsMapper
 }
 
-func NewAuthRoutes(usersUC usecase.Users, tokensUC usecase.Tokens) *AuthRoutes {
-	return &AuthRoutes{UsersUC: usersUC, TokensUC: tokensUC}
+func NewAuthRoutes(usersUC usecase.Users, tokensUC usecase.Tokens, errorsMapper *errors_mapper.ApplicationErrorsMapper) *AuthRoutes {
+	return &AuthRoutes{UsersUC: usersUC, TokensUC: tokensUC, errorsMapper: errorsMapper}
 }
 
 func (auth *AuthRoutes) AuthToken(next echo.HandlerFunc) echo.HandlerFunc {
@@ -60,9 +63,7 @@ func (auth *AuthRoutes) Login(c echo.Context) error {
 	user, err := auth.UsersUC.GetUserByLogin(login)
 
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"message": "unauthorized",
-		})
+		return c.JSON(auth.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
@@ -91,9 +92,7 @@ func (auth *AuthRoutes) Register(c echo.Context) error {
 	}
 	isContains, err := auth.UsersUC.IsContainsLogin(login)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(auth.errorsMapper.ApplicationErrorToHttp(err))
 	} else if isContains {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"message": "the login already exists",
@@ -117,9 +116,7 @@ func (auth *AuthRoutes) Register(c echo.Context) error {
 
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "server error",
-		})
+		return c.JSON(auth.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	token := auth.TokensUC.AddTokenToUser(id)

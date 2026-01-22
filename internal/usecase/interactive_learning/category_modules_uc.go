@@ -3,8 +3,8 @@ package interactivelearning
 import (
 	"errors"
 	"interactive_learning/internal/entity"
-	myerrors "interactive_learning/internal/errors"
 	"interactive_learning/internal/uow"
+	"interactive_learning/internal/usecase"
 	"log"
 	"slices"
 )
@@ -12,16 +12,16 @@ import (
 func (u *UseCase) GetModulesToCategory(categoryId int, isFull bool, userId int) ([]entity.Module, error) {
 	category, err := u.categoryRepoRead.GetCategoryById(categoryId)
 	if err != nil {
-		return []entity.Module{}, err
+		return []entity.Module{}, u.errorsMapper.DBErrorToApp(err)
 	}
 
 	if category.Type >= entity.PrivateCategory && category.OwnerId != userId {
-		return []entity.Module{}, myerrors.NewNotAvailableError("category", category.Id)
+		return []entity.Module{}, usecase.NewNotAvailableError("category", categoryId)
 	}
 
 	modules, err := u.categoryModulesRepoRead.GetModulesToCategory(categoryId)
 	if err != nil {
-		return []entity.Module{}, err
+		return []entity.Module{}, u.errorsMapper.DBErrorToApp(err)
 	}
 
 	if !isFull {
@@ -31,7 +31,7 @@ func (u *UseCase) GetModulesToCategory(categoryId int, isFull bool, userId int) 
 	for i := range modules {
 		cards, err := u.cardsRepoRead.GetCardsByModule(modules[i].Id)
 		if err != nil {
-			return []entity.Module{}, err
+			return []entity.Module{}, u.errorsMapper.DBErrorToApp(err)
 		}
 
 		modules[i].Cards = cards
@@ -43,7 +43,7 @@ func (u *UseCase) GetModulesToCategory(categoryId int, isFull bool, userId int) 
 func (u *UseCase) InsertModulesToCategory(userId, categoryId int, modulesIds []int) error {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
-		return err
+		return usecase.NewInternalError(err)
 	}
 	defer uow.Rollback()
 
@@ -51,8 +51,10 @@ func (u *UseCase) InsertModulesToCategory(userId, categoryId int, modulesIds []i
 	if err != nil {
 		return err
 	}
-
-	return uow.Commit()
+	if err = uow.Commit(); err != nil {
+		return usecase.NewInternalError(err)
+	}
+	return nil
 }
 
 func (u *UseCase) insertModulesToCategory(userId, categoryId int, modulesIds []int, uow uow.UnitOfWork) error {
@@ -61,15 +63,15 @@ func (u *UseCase) insertModulesToCategory(userId, categoryId int, modulesIds []i
 
 	category, err := uow.GetCategoryRepoReader().GetCategoryById(categoryId)
 	if err != nil {
-		return errors.New("bad category id")
+		return u.errorsMapper.DBErrorToApp(err)
 	}
 	if category.OwnerId != userId {
-		return myerrors.NewNotAvailableError("category", categoryId)
+		return usecase.NewNotAvailableError("category", categoryId)
 	}
 
 	for _, moduleId := range modulesIds {
 		if idx := slices.IndexFunc(category.Modules, func(elt entity.Module) bool { return elt.Id == moduleId }); idx >= 0 {
-			return errors.New("module is already exists")
+			return usecase.NewAlreadyExistsError("module", moduleId)
 		}
 	}
 
@@ -77,7 +79,7 @@ func (u *UseCase) insertModulesToCategory(userId, categoryId int, modulesIds []i
 	for _, moduleId := range modulesIds {
 		module, err := uow.GetModuleRepoReader().GetModuleById(moduleId)
 		if err != nil {
-			return err
+			return u.errorsMapper.DBErrorToApp(err)
 		}
 
 		if module.Type == entity.PrivateModule {
@@ -90,14 +92,14 @@ func (u *UseCase) insertModulesToCategory(userId, categoryId int, modulesIds []i
 
 		err = uow.GetCategoryModulesRepoWriter().InsertModulesToCategory(categoryId, moduleId)
 		if err != nil {
-			return err
+			return u.errorsMapper.DBErrorToApp(err)
 		}
 	}
 
 	if newCategoryType != category.Type {
 		err = uow.GetCategoryRepoWriter().UpdateCategoryType(categoryId, newCategoryType)
 		if err != nil {
-			return err
+			return u.errorsMapper.DBErrorToApp(err)
 		}
 	}
 	return nil
@@ -106,7 +108,7 @@ func (u *UseCase) insertModulesToCategory(userId, categoryId int, modulesIds []i
 func (u *UseCase) DeleteModuleFromCategory(userId, categoryId, moduleId int) error {
 	uow := u.unitOfWorkFactory()
 	if err := uow.Begin(); err != nil {
-		return err
+		return usecase.NewInternalError(err)
 	}
 	defer uow.Rollback()
 
@@ -117,7 +119,7 @@ func (u *UseCase) DeleteModuleFromCategory(userId, categoryId, moduleId int) err
 	if err != nil {
 		return err
 	} else if !isOwner {
-		return errors.New("unavailable category")
+		return usecase.NewNotAvailableError("category", categoryId)
 	}
 
 	err = u.deleteModuleResFromCategory(categoryId, moduleId, uow)
@@ -127,34 +129,41 @@ func (u *UseCase) DeleteModuleFromCategory(userId, categoryId, moduleId int) err
 
 	module, err := uow.GetModuleRepoReader().GetModuleById(moduleId)
 	if err != nil {
-		return err
+		return u.errorsMapper.DBErrorToApp(err)
 	}
 
 	if module.Type == entity.PrivateModule {
 		err = uow.GetCategoryRepoWriter().TurnDownCategoryType(categoryId)
 		if err != nil {
-			return err
+			return u.errorsMapper.DBErrorToApp(err)
 		}
 	}
 
 	err = uow.GetCategoryModulesRepoWriter().DeleteModuleFromCategory(categoryId, moduleId)
 	if err != nil {
-		return err
+		return u.errorsMapper.DBErrorToApp(err)
 	}
 
-	return uow.Commit()
+	if err = uow.Commit(); err != nil {
+		return usecase.NewInternalError(err)
+	}
+	return nil
 }
 
 func (u *UseCase) deleteAllModulesFromCategory(categoryId int, uow uow.UnitOfWork) error {
 	u.categoryModulesMutex.Lock()
 	defer u.categoryModulesMutex.Unlock()
 
-	return uow.GetCategoryModulesRepoWriter().DeleteAllModulesFromCategory(categoryId)
+	err := uow.GetCategoryModulesRepoWriter().DeleteAllModulesFromCategory(categoryId)
+	if err != nil {
+		return u.errorsMapper.DBErrorToApp(err)
+	}
+	return nil
 }
 
 func (u *UseCase) deleteModuleFromCategories(moduleId int, uow uow.UnitOfWork) error {
 	if uow == nil {
-		return errors.New("uow is null")
+		return usecase.NewInternalError(errors.New("uow is null"))
 	}
 
 	u.categoryModulesMutex.Lock()
@@ -162,20 +171,23 @@ func (u *UseCase) deleteModuleFromCategories(moduleId int, uow uow.UnitOfWork) e
 
 	module, err := uow.GetModuleRepoReader().GetModuleById(moduleId)
 	if err != nil {
-		return err
+		return u.errorsMapper.DBErrorToApp(err)
 	}
 	if module.Type == entity.PrivateModule {
 		categories, err := uow.GetCategoryModulesRepoReader().GetCategoriesContainsModule(moduleId)
 		if err != nil {
-			return err
+			return u.errorsMapper.DBErrorToApp(err)
 		}
 		for _, category := range categories {
 			err = uow.GetCategoryRepoWriter().TurnDownCategoryType(category.Id)
 			if err != nil {
-				return err
+				return u.errorsMapper.DBErrorToApp(err)
 			}
 		}
 	}
 
-	return uow.GetCategoryModulesRepoWriter().DeleteModuleFromCategories(moduleId)
+	if err = uow.GetCategoryModulesRepoWriter().DeleteModuleFromCategories(moduleId); err != nil {
+		return u.errorsMapper.DBErrorToApp(err)
+	}
+	return nil
 }

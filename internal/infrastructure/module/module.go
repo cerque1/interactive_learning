@@ -1,10 +1,9 @@
 package module
 
 import (
-	"errors"
 	"interactive_learning/internal/entity"
-	myerrors "interactive_learning/internal/errors"
 	httputils "interactive_learning/internal/http_utils"
+	errors_mapper "interactive_learning/internal/mappers/errors"
 	"interactive_learning/internal/usecase"
 	"net/http"
 	"strconv"
@@ -15,10 +14,12 @@ import (
 type ModuleRoutes struct {
 	ModuleUC usecase.Modules
 	CardUC   usecase.Cards
+
+	errorsMapper *errors_mapper.ApplicationErrorsMapper
 }
 
-func NewModuleRoutes(moduleUC usecase.Modules, cardUC usecase.Cards) *ModuleRoutes {
-	return &ModuleRoutes{ModuleUC: moduleUC, CardUC: cardUC}
+func NewModuleRoutes(moduleUC usecase.Modules, cardUC usecase.Cards, errorsMapper *errors_mapper.ApplicationErrorsMapper) *ModuleRoutes {
+	return &ModuleRoutes{ModuleUC: moduleUC, CardUC: cardUC, errorsMapper: errorsMapper}
 }
 
 func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
@@ -47,18 +48,8 @@ func (mr *ModuleRoutes) GetModulesByUser(c echo.Context) error {
 
 	modules, err := mr.ModuleUC.GetModulesByUser(id, isWithCards, userId)
 	if err != nil {
-		switch {
-		case errors.Is(err, myerrors.ErrNotAvailable):
-			return c.JSON(http.StatusNotAcceptable, map[string]string{
-				"message": err.Error(),
-			})
-		default:
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
-		}
+		return c.JSON(mr.errorsMapper.ApplicationErrorToHttp(err))
 	}
-
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"modules": modules,
 	})
@@ -82,18 +73,8 @@ func (mr *ModuleRoutes) GetModuleById(c echo.Context) error {
 
 	module, err := mr.ModuleUC.GetModuleById(id, userId)
 	if err != nil {
-		switch {
-		case errors.Is(err, myerrors.ErrNotAvailable):
-			return c.JSON(http.StatusNotAcceptable, map[string]string{
-				"message": err.Error(),
-			})
-		default:
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
-		}
+		return c.JSON(mr.errorsMapper.ApplicationErrorToHttp(err))
 	}
-
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"module": module,
 	})
@@ -121,16 +102,7 @@ func (mr *ModuleRoutes) GetModulesByIds(c echo.Context) error {
 
 	modules, err := mr.ModuleUC.GetModulesByIds(modulesIds.ModulesIds, isWithCards, userId)
 	if err != nil {
-		switch {
-		case errors.Is(err, myerrors.ErrNotAvailable):
-			return c.JSON(http.StatusNotAcceptable, map[string]string{
-				"message": err.Error(),
-			})
-		default:
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
-		}
+		return c.JSON(mr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"modules": modules,
@@ -153,9 +125,7 @@ func (mr *ModuleRoutes) GetPopularModule(c echo.Context) error {
 
 	popularModules, err := mr.ModuleUC.GetPopularModules(limit, offset)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"message": err.Error(),
-		})
+		return c.JSON(mr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"popular_modules": popularModules,
@@ -192,9 +162,7 @@ func (mr *ModuleRoutes) SearchModules(c echo.Context) error {
 
 	foundModules, err := mr.ModuleUC.GetModulesWithSimilarName(name, limit, offset, userId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(mr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"found_modules": foundModules,
@@ -224,9 +192,7 @@ func (mr *ModuleRoutes) InsertModule(c echo.Context) error {
 
 	id, ids, err := mr.ModuleUC.InsertModule(module)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(mr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"new_module_id": id,
@@ -259,9 +225,7 @@ func (mr *ModuleRoutes) RenameModule(c echo.Context) error {
 
 	err = mr.ModuleUC.RenameModule(userId, moduleId, newName.NewName)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(mr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
 }
@@ -288,9 +252,7 @@ func (mr *ModuleRoutes) ChangeModuleType(c echo.Context) error {
 
 	err = mr.ModuleUC.UpdateModuleType(moduleId, moduleType.Type, userId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(mr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -313,9 +275,7 @@ func (mr *ModuleRoutes) DeleteModule(c echo.Context) error {
 
 	err = mr.ModuleUC.DeleteModule(userId, moduleId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "delete module error: " + err.Error(),
-		})
+		return c.JSON(mr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
 }

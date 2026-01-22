@@ -1,6 +1,7 @@
 package selected
 
 import (
+	errors_mapper "interactive_learning/internal/mappers/errors"
 	"interactive_learning/internal/usecase"
 	"net/http"
 	"strconv"
@@ -10,10 +11,12 @@ import (
 
 type SelectedRouter struct {
 	selectedUC usecase.Selected
+
+	errorsMapper *errors_mapper.ApplicationErrorsMapper
 }
 
-func NewSelectedRouter(selectedUC usecase.Selected) *SelectedRouter {
-	return &SelectedRouter{selectedUC: selectedUC}
+func NewSelectedRouter(selectedUC usecase.Selected, errorsMapper *errors_mapper.ApplicationErrorsMapper) *SelectedRouter {
+	return &SelectedRouter{selectedUC: selectedUC, errorsMapper: errorsMapper}
 }
 
 func (sr *SelectedRouter) GetAllSelectedModulesByUser(c echo.Context) error {
@@ -26,9 +29,7 @@ func (sr *SelectedRouter) GetAllSelectedModulesByUser(c echo.Context) error {
 
 	modules, err := sr.selectedUC.GetAllSelectedModulesByUser(userId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(sr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"selected_modules": modules,
@@ -45,9 +46,7 @@ func (sr *SelectedRouter) GetAllSelectedCategoriesByUser(c echo.Context) error {
 
 	categories, err := sr.selectedUC.GetAllSelectedCategoriesByUser(userId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(sr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"selected_categories": categories,
@@ -81,9 +80,7 @@ func (sr *SelectedRouter) GetUsersCountToSelectedModuleOrCategory(c echo.Context
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(sr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"count": count,
@@ -106,9 +103,7 @@ func (sr *SelectedRouter) InsertSelectedModuleToUser(c echo.Context) error {
 
 	err = sr.selectedUC.InsertSelectedModuleToUser(userId, moduleId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(sr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -129,9 +124,7 @@ func (sr *SelectedRouter) InsertSelectedCategoryToUser(c echo.Context) error {
 
 	err = sr.selectedUC.InsertSelectedCategoryToUser(userId, categoryId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(sr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -152,9 +145,7 @@ func (sr *SelectedRouter) DeleteModuleToUser(c echo.Context) error {
 
 	err = sr.selectedUC.DeleteModuleToUser(userId, moduleId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(sr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -175,9 +166,7 @@ func (sr *SelectedRouter) DeleteCategoryToUser(c echo.Context) error {
 
 	err = sr.selectedUC.DeleteCategoryToUser(userId, categoryId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(sr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.NoContent(http.StatusOK)
 }

@@ -1,8 +1,7 @@
 package user
 
 import (
-	"errors"
-	myerrors "interactive_learning/internal/errors"
+	errors_mapper "interactive_learning/internal/mappers/errors"
 	"interactive_learning/internal/usecase"
 	"net/http"
 	"strconv"
@@ -12,10 +11,12 @@ import (
 
 type UserRoutes struct {
 	UsersUC usecase.Users
+
+	errorsMapper *errors_mapper.ApplicationErrorsMapper
 }
 
-func NewUserRoues(UsersUC usecase.Users) *UserRoutes {
-	return &UserRoutes{UsersUC: UsersUC}
+func NewUserRoues(UsersUC usecase.Users, errorsMapper *errors_mapper.ApplicationErrorsMapper) *UserRoutes {
+	return &UserRoutes{UsersUC: UsersUC, errorsMapper: errorsMapper}
 }
 
 func (ur *UserRoutes) GetUserInfoById(c echo.Context) error {
@@ -48,16 +49,7 @@ func (ur *UserRoutes) GetUserInfoById(c echo.Context) error {
 
 	user, err := ur.UsersUC.GetUserInfoById(id, isFull, userId)
 	if err != nil {
-		switch {
-		case errors.Is(err, myerrors.ErrNotAvailable):
-			return c.JSON(http.StatusNotAcceptable, map[string]string{
-				"message": err.Error(),
-			})
-		default:
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
-		}
+		return c.JSON(ur.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"user": user,
@@ -87,9 +79,7 @@ func (ur *UserRoutes) SearchUsers(c echo.Context) error {
 
 	foundUsers, err := ur.UsersUC.GetUsersWithSimilarName(name, limit, offset)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"message": err.Error(),
-		})
+		return c.JSON(ur.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"found_users": foundUsers,

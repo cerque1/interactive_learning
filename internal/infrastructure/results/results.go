@@ -2,6 +2,7 @@ package results
 
 import (
 	httputils "interactive_learning/internal/http_utils"
+	errors_mapper "interactive_learning/internal/mappers/errors"
 	"interactive_learning/internal/usecase"
 	"net/http"
 	"strconv"
@@ -11,10 +12,12 @@ import (
 
 type ResultsRoutes struct {
 	ResultsUC usecase.Results
+
+	errorsMapper *errors_mapper.ApplicationErrorsMapper
 }
 
-func NewResultsRoutes(ResultsUC usecase.Results) *ResultsRoutes {
-	return &ResultsRoutes{ResultsUC: ResultsUC}
+func NewResultsRoutes(ResultsUC usecase.Results, errorsMapper *errors_mapper.ApplicationErrorsMapper) *ResultsRoutes {
+	return &ResultsRoutes{ResultsUC: ResultsUC, errorsMapper: errorsMapper}
 }
 
 func (rr *ResultsRoutes) GetResultsByOwner(c echo.Context) error {
@@ -45,9 +48,7 @@ func (rr *ResultsRoutes) GetResultsByOwner(c echo.Context) error {
 	} else if isModuleRes {
 		moduleResults, err := rr.ResultsUC.GetResultsToModuleId(moduleId, userId)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
+			return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -56,9 +57,7 @@ func (rr *ResultsRoutes) GetResultsByOwner(c echo.Context) error {
 	} else if isCategoryRes {
 		categoryResults, err := rr.ResultsUC.GetResultsByCategoryId(categoryId, userId)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
+			return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -68,9 +67,7 @@ func (rr *ResultsRoutes) GetResultsByOwner(c echo.Context) error {
 
 	categoriesResults, modulesResults, err := rr.ResultsUC.GetResultsByOwner(userId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -90,9 +87,7 @@ func (rr *ResultsRoutes) GetModuleResultById(c echo.Context) error {
 
 	moduleRes, err := rr.ResultsUC.GetModuleResultById(id)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -111,9 +106,7 @@ func (rr *ResultsRoutes) GetCardsResultById(c echo.Context) error {
 
 	cardsResults, err := rr.ResultsUC.GetCardsResultById(id)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -132,9 +125,7 @@ func (rr *ResultsRoutes) GetCategoryResById(c echo.Context) error {
 
 	categoryResult, err := rr.ResultsUC.GetCategoryResById(id)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -160,9 +151,7 @@ func (rr *ResultsRoutes) InsertModuleResult(c echo.Context) error {
 
 	newId, err := rr.ResultsUC.InsertModuleResult(insertModuleReq)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]int{
 		"new_id": newId,
@@ -187,9 +176,7 @@ func (rr *ResultsRoutes) InsertCategoryResult(c echo.Context) error {
 
 	newCategoryResultId, newResultsIds, err := rr.ResultsUC.InsertCategoryResult(insertCategoryReq)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"new_category_result_id": newCategoryResultId,
@@ -208,9 +195,7 @@ func (rr *ResultsRoutes) DeleteModuleResult(c echo.Context) error {
 
 	err = rr.ResultsUC.DeleteModuleResult(id)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -226,9 +211,7 @@ func (rr *ResultsRoutes) DeleteCategoryResultById(c echo.Context) error {
 
 	err = rr.ResultsUC.DeleteCategoryResultById(id)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(rr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.NoContent(http.StatusOK)
 }

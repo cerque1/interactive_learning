@@ -8,6 +8,7 @@ import (
 	"interactive_learning/internal/infrastructure/results"
 	"interactive_learning/internal/infrastructure/selected"
 	"interactive_learning/internal/infrastructure/user"
+	errors_mapper "interactive_learning/internal/mappers/errors"
 	"interactive_learning/internal/usecase"
 	"net/http"
 	_ "net/http/pprof"
@@ -15,14 +16,23 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func NewEcho(pathToStatic string, usersUC usecase.Users, tokensUC usecase.Tokens, cardUC usecase.Cards, modulesUC usecase.Modules, categorieUC usecase.Categories, categoryModulesUC usecase.CategoryModules, resultsUC usecase.Results, selectUC usecase.Selected) *echo.Echo {
-	authRoutes := auth.NewAuthRoutes(usersUC, tokensUC)
-	usersRoutes := user.NewUserRoues(usersUC)
-	moduleRoutes := module.NewModuleRoutes(modulesUC, cardUC)
-	cardRoutes := card.NewCardRoutes(cardUC)
-	categoriesRoutes := category.NewCategoryRoutes(categorieUC, categoryModulesUC)
-	resultsRoutes := results.NewResultsRoutes(resultsUC)
-	selectedRoutes := selected.NewSelectedRouter(selectUC)
+func NewEcho(pathToStatic string,
+	usersUC usecase.Users,
+	tokensUC usecase.Tokens,
+	cardUC usecase.Cards,
+	modulesUC usecase.Modules,
+	categorieUC usecase.Categories,
+	categoryModulesUC usecase.CategoryModules,
+	resultsUC usecase.Results,
+	selectUC usecase.Selected,
+	errorsMapper *errors_mapper.ApplicationErrorsMapper) *echo.Echo {
+	authRoutes := auth.NewAuthRoutes(usersUC, tokensUC, errorsMapper)
+	usersRoutes := user.NewUserRoues(usersUC, errorsMapper)
+	moduleRoutes := module.NewModuleRoutes(modulesUC, cardUC, errorsMapper)
+	cardRoutes := card.NewCardRoutes(cardUC, errorsMapper)
+	categoriesRoutes := category.NewCategoryRoutes(categorieUC, categoryModulesUC, errorsMapper)
+	resultsRoutes := results.NewResultsRoutes(resultsUC, errorsMapper)
+	selectedRoutes := selected.NewSelectedRouter(selectUC, errorsMapper)
 
 	e := echo.New()
 	e.Static("/static", pathToStatic)

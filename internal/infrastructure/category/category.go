@@ -1,10 +1,9 @@
 package category
 
 import (
-	"errors"
 	"interactive_learning/internal/entity"
-	myerrors "interactive_learning/internal/errors"
 	httputils "interactive_learning/internal/http_utils"
+	errors_mapper "interactive_learning/internal/mappers/errors"
 	"interactive_learning/internal/usecase"
 	"net/http"
 	"strconv"
@@ -15,10 +14,12 @@ import (
 type CategoryRoutes struct {
 	CategoriesUC      usecase.Categories
 	CategoryModulesUC usecase.CategoryModules
+
+	errorsMapper *errors_mapper.ApplicationErrorsMapper
 }
 
-func NewCategoryRoutes(CategoriesUC usecase.Categories, CategoryModulesUC usecase.CategoryModules) *CategoryRoutes {
-	return &CategoryRoutes{CategoriesUC: CategoriesUC, CategoryModulesUC: CategoryModulesUC}
+func NewCategoryRoutes(CategoriesUC usecase.Categories, CategoryModulesUC usecase.CategoryModules, errorsMapper *errors_mapper.ApplicationErrorsMapper) *CategoryRoutes {
+	return &CategoryRoutes{CategoriesUC: CategoriesUC, CategoryModulesUC: CategoryModulesUC, errorsMapper: errorsMapper}
 }
 
 func (cr *CategoryRoutes) GetCategoryById(c echo.Context) error {
@@ -39,16 +40,7 @@ func (cr *CategoryRoutes) GetCategoryById(c echo.Context) error {
 
 	categories, err := cr.CategoriesUC.GetCategoryById(id, userId)
 	if err != nil {
-		switch {
-		case errors.Is(err, myerrors.ErrNotAvailable):
-			return c.JSON(http.StatusNotAcceptable, map[string]string{
-				"message": err.Error(),
-			})
-		default:
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
-		}
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -86,16 +78,7 @@ func (cr *CategoryRoutes) GetCategoriesToUser(c echo.Context) error {
 
 	categories, err := cr.CategoriesUC.GetCategoriesToUser(id, isFull, userId)
 	if err != nil {
-		switch {
-		case errors.Is(err, myerrors.ErrNotAvailable):
-			return c.JSON(http.StatusNotAcceptable, map[string]string{
-				"message": err.Error(),
-			})
-		default:
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
-		}
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -126,16 +109,7 @@ func (cr *CategoryRoutes) GetModulesToCategory(c echo.Context) error {
 
 	modules, err := cr.CategoryModulesUC.GetModulesToCategory(id, isFull, userId)
 	if err != nil {
-		switch {
-		case errors.Is(err, myerrors.ErrNotAvailable):
-			return c.JSON(http.StatusNotAcceptable, map[string]string{
-				"message": err.Error(),
-			})
-		default:
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
-		}
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -159,9 +133,7 @@ func (cr *CategoryRoutes) GetPopularCategories(c echo.Context) error {
 
 	popularCategories, err := cr.CategoriesUC.GetPopularCategories(limit, offset)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"message": err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"popular_categories": popularCategories,
@@ -198,9 +170,7 @@ func (cr *CategoryRoutes) SearchCategories(c echo.Context) error {
 
 	foundCategories, err := cr.CategoriesUC.GetCategoriesWithSimilarName(name, limit, offset, userId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"found_categories": foundCategories,
@@ -226,9 +196,7 @@ func (cr *CategoryRoutes) InsertCategory(c echo.Context) error {
 
 	id, err := cr.CategoriesUC.InsertCategory(categoryToCreate)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"new_id": id,
@@ -258,9 +226,7 @@ func (cr *CategoryRoutes) InsertModulesToCategory(c echo.Context) error {
 	}
 
 	if err = cr.CategoryModulesUC.InsertModulesToCategory(userId, categoryId, modulesIds.ModulesIds); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
 }
@@ -289,9 +255,7 @@ func (cr *CategoryRoutes) RenameCategory(c echo.Context) error {
 
 	err = cr.CategoriesUC.RenameCategory(userId, categoryId, newName.NewName)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
 }
@@ -318,9 +282,7 @@ func (cr *CategoryRoutes) ChangeCategoryType(c echo.Context) error {
 
 	err = cr.CategoriesUC.UpdateCategoryType(categoryId, categoryType.Type, userId)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -343,9 +305,7 @@ func (cr *CategoryRoutes) DeleteCategory(c echo.Context) error {
 
 	err = cr.CategoriesUC.DeleteCategory(userId, cardId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "delete category error " + err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
 }
@@ -374,9 +334,7 @@ func (cr *CategoryRoutes) DeleteModuleFromCategory(c echo.Context) error {
 
 	err = cr.CategoryModulesUC.DeleteModuleFromCategory(userId, categoryId, moduleId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "error delete module from category",
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
 }

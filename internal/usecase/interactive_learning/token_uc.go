@@ -7,9 +7,16 @@ func (u *UseCase) AddTokenToUser(id int) tokengenerator.Token {
 }
 
 func (u *UseCase) DeleteTokenToUser(id int) error {
-	return u.tokenStorage.DeleteTokenToUser(id)
+	if err := u.tokenStorage.DeleteTokenToUser(id); err != nil {
+		return u.errorsMapper.DBErrorToApp(err)
+	}
+	return nil
 }
 
 func (u *UseCase) IsValidToken(token tokengenerator.Token) (int, error) {
-	return u.tokenStorage.IsValidToken(token)
+	userId, err := u.tokenStorage.IsValidToken(token)
+	if err != nil {
+		return -1, u.errorsMapper.DBErrorToApp(err)
+	}
+	return userId, nil
 }

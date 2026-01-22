@@ -1,11 +1,9 @@
 package card
 
 import (
-	"errors"
 	"interactive_learning/internal/entity"
-	myerrors "interactive_learning/internal/errors"
+	errors_mapper "interactive_learning/internal/mappers/errors"
 	"interactive_learning/internal/usecase"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -14,10 +12,12 @@ import (
 
 type CardRoutes struct {
 	CardUC usecase.Cards
+
+	errorsMapper *errors_mapper.ApplicationErrorsMapper
 }
 
-func NewCardRoutes(cardUc usecase.Cards) *CardRoutes {
-	return &CardRoutes{CardUC: cardUc}
+func NewCardRoutes(cardUc usecase.Cards, errorsMapper *errors_mapper.ApplicationErrorsMapper) *CardRoutes {
+	return &CardRoutes{CardUC: cardUc, errorsMapper: errorsMapper}
 }
 
 func (cr *CardRoutes) GetCardsByModule(c echo.Context) error {
@@ -38,16 +38,7 @@ func (cr *CardRoutes) GetCardsByModule(c echo.Context) error {
 
 	cards, err := cr.CardUC.GetCardsByModule(id, userId)
 	if err != nil {
-		switch {
-		case errors.Is(err, myerrors.ErrNotAvailable):
-			return c.JSON(http.StatusNotAcceptable, map[string]string{
-				"message": err.Error(),
-			})
-		default:
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": err.Error(),
-			})
-		}
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -66,9 +57,7 @@ func (cr *CardRoutes) GetCardById(c echo.Context) error {
 
 	card, err := cr.CardUC.GetCardById(id)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -86,9 +75,7 @@ func (cr *CardRoutes) InsertCards(c echo.Context) error {
 
 	id, err := cr.CardUC.InsertCards(cards)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"new_ids": id,
@@ -121,10 +108,7 @@ func (cr *CardRoutes) UpdateCard(c echo.Context) error {
 
 	err = cr.CardUC.UpdateCard(userId, card)
 	if err != nil {
-		log.Println("update card error", err.Error())
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "update card error",
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
 }
@@ -147,9 +131,7 @@ func (cr *CardRoutes) DeleteCard(c echo.Context) error {
 
 	err = cr.CardUC.DeleteCard(userId, cardId)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "delete card error " + err.Error(),
-		})
+		return c.JSON(cr.errorsMapper.ApplicationErrorToHttp(err))
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{})
 }
